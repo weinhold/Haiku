@@ -6,7 +6,7 @@
 #ifndef UI_UTILS_H
 #define UI_UTILS_H
 
-#include <size_t.h>
+#include <sys/types.h>
 
 #include <image.h>
 
