@@ -544,7 +544,7 @@ TeamDebugger::Init(DebuggerInterface* interface, thread_id threadID, int argc,
 				mainThreadHandler->SetBreakpointAndRun(symbolInfo.Address());
 			}
 		} else {
-			debug_thread(threadID);
+			fDebuggerInterface->StopThread(threadID);
 				// TODO: Superfluous, if the thread is already stopped.
 		}
 	}
