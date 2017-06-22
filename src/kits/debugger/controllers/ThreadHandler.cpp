@@ -240,9 +240,8 @@ ThreadHandler::HandleSingleStep(SingleStepEvent* event)
 bool
 ThreadHandler::HandleExceptionOccurred(ExceptionOccurredEvent* event)
 {
-	char buffer[256];
-	get_debug_exception_string(event->Exception(), buffer, sizeof(buffer));
-	return _HandleThreadStopped(NULL, THREAD_STOPPED_EXCEPTION, buffer);
+	return _HandleThreadStopped(NULL, THREAD_STOPPED_EXCEPTION,
+		event->Description());
 }
 
 
