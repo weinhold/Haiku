@@ -104,12 +104,15 @@ class ExceptionOccurredEvent : public DebugEvent {
 public:
 								ExceptionOccurredEvent(team_id team,
 									thread_id thread,
-									debug_exception_type exception);
+									debug_exception_type exception,
+									const char* description);
 
 			debug_exception_type Exception() const	{ return fException; }
+			const char*			Description() const	{ return fDescription; }
 
 private:
 			debug_exception_type fException;
+			char				fDescription[256];
 };
 
 

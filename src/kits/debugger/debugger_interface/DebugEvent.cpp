@@ -115,11 +115,12 @@ SingleStepEvent::SingleStepEvent(team_id team, thread_id thread,
 
 
 ExceptionOccurredEvent::ExceptionOccurredEvent(team_id team, thread_id thread,
-	debug_exception_type exception)
+	debug_exception_type exception, const char* description)
 	:
 	DebugEvent(B_DEBUGGER_MESSAGE_EXCEPTION_OCCURRED, team, thread),
 	fException(exception)
 {
+	strlcpy(fDescription, description, sizeof(fDescription));
 }
 
 
