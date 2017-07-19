@@ -21,7 +21,7 @@ public:
 
 			team_id				TeamID() const		{ return fTeam; }
 			thread_id			ThreadID() const	{ return fThread; }
-			const char*			Name() const	{ return fName.String(); }
+			const BString&		Name() const		{ return fName; }
 
 private:
 			team_id				fTeam;
