@@ -42,6 +42,54 @@ static const int kInitialDebugContextCount = 3;
 static const int kMaxDebugContextCount = 10;
 
 
+static int
+signal_number_to_debugger(int number) {
+	#define SIGNAL_NUMBER_TO_DEBUGGER(signal) \
+		case SIG##signal: return SIGNAL_##signal
+
+	switch (number) {
+		SIGNAL_NUMBER_TO_DEBUGGER(HUP);
+		SIGNAL_NUMBER_TO_DEBUGGER(INT);
+		SIGNAL_NUMBER_TO_DEBUGGER(QUIT);
+		SIGNAL_NUMBER_TO_DEBUGGER(ILL);
+		SIGNAL_NUMBER_TO_DEBUGGER(CHLD);
+		SIGNAL_NUMBER_TO_DEBUGGER(ABRT);
+		SIGNAL_NUMBER_TO_DEBUGGER(PIPE);
+		SIGNAL_NUMBER_TO_DEBUGGER(FPE);
+		SIGNAL_NUMBER_TO_DEBUGGER(KILL);
+		SIGNAL_NUMBER_TO_DEBUGGER(STOP);
+		SIGNAL_NUMBER_TO_DEBUGGER(SEGV);
+		SIGNAL_NUMBER_TO_DEBUGGER(CONT);
+		SIGNAL_NUMBER_TO_DEBUGGER(TSTP);
+		SIGNAL_NUMBER_TO_DEBUGGER(ALRM);
+		SIGNAL_NUMBER_TO_DEBUGGER(TERM);
+		SIGNAL_NUMBER_TO_DEBUGGER(TTIN);
+		SIGNAL_NUMBER_TO_DEBUGGER(TTOU);
+		SIGNAL_NUMBER_TO_DEBUGGER(USR1);
+		SIGNAL_NUMBER_TO_DEBUGGER(USR2);
+		SIGNAL_NUMBER_TO_DEBUGGER(WINCH);
+		SIGNAL_NUMBER_TO_DEBUGGER(KILLTHR);
+		SIGNAL_NUMBER_TO_DEBUGGER(TRAP);
+		SIGNAL_NUMBER_TO_DEBUGGER(POLL);
+		SIGNAL_NUMBER_TO_DEBUGGER(PROF);
+		SIGNAL_NUMBER_TO_DEBUGGER(SYS);
+		SIGNAL_NUMBER_TO_DEBUGGER(URG);
+		SIGNAL_NUMBER_TO_DEBUGGER(VTALRM);
+		SIGNAL_NUMBER_TO_DEBUGGER(XCPU);
+		SIGNAL_NUMBER_TO_DEBUGGER(XFSZ);
+		SIGNAL_NUMBER_TO_DEBUGGER(BUS);
+		default:
+			// realtime signals
+			if (number >= SIGRTMIN && number <= SIGRTMAX)
+				return number - SIGRTMIN + SIGNAL_REALTIME_MIN;
+			// unknown signals
+			return SIGNAL_UNKNOWN_BASE + number;
+	}
+
+	#undef SIGNAL_NUMBER_TO_DEBUGGER
+}
+
+
 // #pragma mark - LocalDebuggerInterface::DebugContext
 
 struct LocalDebuggerInterface::DebugContext : debug_context,
@@ -844,10 +892,15 @@ LocalDebuggerInterface::_CreateDebugEvent(int32 messageCode,
 			break;
 		}
 		case B_DEBUGGER_MESSAGE_EXCEPTION_OCCURRED:
+		{
+			char description[256];
+			get_debug_exception_string(message.exception_occurred.exception,
+				description, sizeof(description));
 			event = new(std::nothrow) ExceptionOccurredEvent(
 				message.origin.team, message.origin.thread,
-				message.exception_occurred.exception);
+				message.exception_occurred.exception, description);
 			break;
+		}
 		case B_DEBUGGER_MESSAGE_TEAM_DELETED:
 			if (message.origin.team != fTeamID) {
 				_ignore = true;
@@ -906,7 +959,8 @@ LocalDebuggerInterface::_CreateDebugEvent(int32 messageCode,
 		{
 			event = new(std::nothrow) SignalReceivedEvent(message.origin.team,
 				message.origin.thread,
-				SignalInfo(message.signal_received.signal,
+				SignalInfo(
+					signal_number_to_debugger(message.signal_received.signal),
 					message.signal_received.handler,
 					message.signal_received.deadly));
 			break;
