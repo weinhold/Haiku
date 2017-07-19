@@ -154,6 +154,7 @@ local sources =
 
 	# debugger_interface/remote
 	RemoteDebugRequest.cpp
+	RemoteProtocol.cpp
 
 	# elf
 	CoreFile.cpp
