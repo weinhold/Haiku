@@ -342,7 +342,7 @@ ArchitectureX8664::GetDwarfRegisterMaps(RegisterMap** _toDwarf,
 
 
 status_t
-ArchitectureX8664::GetCpuFeatures(uint32& flags)
+ArchitectureX8664::GetCpuFeatures(uint32& flags) const
 {
 	// TODO: implement if/when it winds up being needed.
 	flags = 0;
@@ -351,7 +351,7 @@ ArchitectureX8664::GetCpuFeatures(uint32& flags)
 
 
 status_t
-ArchitectureX8664::CreateCpuState(CpuState*& _state)
+ArchitectureX8664::CreateCpuState(CpuState*& _state) const
 {
 	CpuStateX8664* state = new(std::nothrow) CpuStateX8664;
 	if (state == NULL)
@@ -364,7 +364,7 @@ ArchitectureX8664::CreateCpuState(CpuState*& _state)
 
 status_t
 ArchitectureX8664::CreateCpuState(const void* cpuStateData, size_t size,
-	CpuState*& _state)
+	CpuState*& _state) const
 {
 	if (size != sizeof(x86_64_debug_cpu_state))
 		return B_BAD_VALUE;
@@ -382,7 +382,7 @@ ArchitectureX8664::CreateCpuState(const void* cpuStateData, size_t size,
 status_t
 ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 	CpuState* _cpuState, bool isTopFrame, StackFrame*& _frame,
-	CpuState*& _previousCpuState)
+	CpuState*& _previousCpuState) const
 {
 	CpuStateX8664* cpuState = dynamic_cast<CpuStateX8664*>(_cpuState);
 	uint64 framePointer = cpuState->IntRegisterValue(X86_64_REGISTER_RBP);
@@ -524,7 +524,7 @@ ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 void
 ArchitectureX8664::UpdateStackFrameCpuState(const StackFrame* frame,
 	Image* previousImage, FunctionDebugInfo* previousFunction,
-	CpuState* previousCpuState)
+	CpuState* previousCpuState) const
 {
 	// This is not a top frame, so we want to offset rip to the previous
 	// (calling) instruction.
@@ -629,7 +629,7 @@ ArchitectureX8664::ReadValueFromMemory(target_addr_t addressSpace,
 
 status_t
 ArchitectureX8664::DisassembleCode(FunctionDebugInfo* function,
-	const void* buffer, size_t bufferSize, DisassembledCode*& _sourceCode)
+	const void* buffer, size_t bufferSize, DisassembledCode*& _sourceCode) const
 {
 	DisassembledCode* source = new(std::nothrow) DisassembledCode(
 		fAssemblyLanguage);
@@ -669,7 +669,7 @@ ArchitectureX8664::DisassembleCode(FunctionDebugInfo* function,
 
 status_t
 ArchitectureX8664::GetStatement(FunctionDebugInfo* function,
-	target_addr_t address, Statement*& _statement)
+	target_addr_t address, Statement*& _statement) const
 {
 // TODO: This is not architecture dependent anymore!
 	// get the instruction info
@@ -691,7 +691,7 @@ ArchitectureX8664::GetStatement(FunctionDebugInfo* function,
 
 status_t
 ArchitectureX8664::GetInstructionInfo(target_addr_t address,
-	InstructionInfo& _info, CpuState* state)
+	InstructionInfo& _info, CpuState* state) const
 {
 	// read the code - maximum x86{-64} instruction size = 15 bytes
 	uint8 buffer[16];
@@ -712,7 +712,7 @@ ArchitectureX8664::GetInstructionInfo(target_addr_t address,
 
 status_t
 ArchitectureX8664::ResolvePICFunctionAddress(target_addr_t instructionAddress,
-	CpuState* state, target_addr_t& _targetAddress)
+	CpuState* state, target_addr_t& _targetAddress) const
 {
 	target_addr_t previousIP = state->InstructionPointer();
 	// if the function in question is position-independent, the call
@@ -747,7 +747,7 @@ ArchitectureX8664::ResolvePICFunctionAddress(target_addr_t instructionAddress,
 
 status_t
 ArchitectureX8664::GetWatchpointDebugCapabilities(int32& _maxRegisterCount,
-	int32& _maxBytesPerRegister, uint8& _watchpointCapabilityFlags)
+	int32& _maxBytesPerRegister, uint8& _watchpointCapabilityFlags) const
 {
 	// Have 4 debug registers, 1 is required for breakpoint support, which
 	// leaves 3 available for watchpoints.
@@ -764,7 +764,7 @@ ArchitectureX8664::GetWatchpointDebugCapabilities(int32& _maxRegisterCount,
 
 status_t
 ArchitectureX8664::GetReturnAddressLocation(StackFrame* frame,
-	target_size_t valueSize, ValueLocation*& _location)
+	target_size_t valueSize, ValueLocation*& _location) const
 {
 	// for the calling conventions currently in use on Haiku,
 	// the x86-64 rules for how values are returned are as follows:

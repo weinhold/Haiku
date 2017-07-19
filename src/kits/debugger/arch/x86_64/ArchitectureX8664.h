@@ -33,21 +33,21 @@ public:
 	virtual	status_t			GetDwarfRegisterMaps(RegisterMap** _toDwarf,
 									RegisterMap** _fromDwarf) const;
 
-	virtual	status_t			GetCpuFeatures(uint32& flags);
+	virtual	status_t			GetCpuFeatures(uint32& flags) const;
 
-	virtual	status_t			CreateCpuState(CpuState*& _state);
+	virtual	status_t			CreateCpuState(CpuState*& _state) const;
 	virtual	status_t			CreateCpuState(const void* cpuStateData,
-									size_t size, CpuState*& _state);
+									size_t size, CpuState*& _state) const;
 	virtual	status_t			CreateStackFrame(Image* image,
 									FunctionDebugInfo* function,
 									CpuState* cpuState, bool isTopFrame,
 									StackFrame*& _previousFrame,
-									CpuState*& _previousCpuState);
+									CpuState*& _previousCpuState) const;
 	virtual	void				UpdateStackFrameCpuState(
 									const StackFrame* frame,
 									Image* previousImage,
 									FunctionDebugInfo* previousFunction,
-									CpuState* previousCpuState);
+									CpuState* previousCpuState) const;
 
 	virtual	status_t			ReadValueFromMemory(target_addr_t address,
 									uint32 valueType, BVariant& _value) const;
@@ -57,25 +57,26 @@ public:
 
 	virtual	status_t			DisassembleCode(FunctionDebugInfo* function,
 									const void* buffer, size_t bufferSize,
-									DisassembledCode*& _sourceCode);
+									DisassembledCode*& _sourceCode) const;
 	virtual	status_t			GetStatement(FunctionDebugInfo* function,
 									target_addr_t address,
-									Statement*& _statement);
+									Statement*& _statement) const;
 	virtual	status_t			GetInstructionInfo(target_addr_t address,
-									InstructionInfo& _info, CpuState* state);
+									InstructionInfo& _info,
+									CpuState* state) const;
 	virtual	status_t			ResolvePICFunctionAddress(target_addr_t
 									instructionAddress,
 									CpuState* state,
-									target_addr_t& _targetAddress);
+									target_addr_t& _targetAddress) const;
 
 	virtual	status_t			GetWatchpointDebugCapabilities(
 									int32& _maxRegisterCount,
 									int32& _maxBytesPerRegister,
-									uint8& _watchpointCapabilityFlags);
+									uint8& _watchpointCapabilityFlags) const;
 
 	virtual	status_t			GetReturnAddressLocation(
 									StackFrame* frame, target_size_t valueSize,
-									ValueLocation*& _location);
+									ValueLocation*& _location) const;
 
 private:
 			struct ToDwarfRegisterMap;

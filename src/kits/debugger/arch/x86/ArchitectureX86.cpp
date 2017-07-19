@@ -315,7 +315,7 @@ ArchitectureX86::GetDwarfRegisterMaps(RegisterMap** _toDwarf,
 
 
 status_t
-ArchitectureX86::GetCpuFeatures(uint32& flags)
+ArchitectureX86::GetCpuFeatures(uint32& flags) const
 {
 	flags = fFeatureFlags;
 
@@ -324,7 +324,7 @@ ArchitectureX86::GetCpuFeatures(uint32& flags)
 
 
 status_t
-ArchitectureX86::CreateCpuState(CpuState*& _state)
+ArchitectureX86::CreateCpuState(CpuState*& _state) const
 {
 	CpuStateX86* state = new(std::nothrow) CpuStateX86;
 	if (state == NULL)
@@ -337,7 +337,7 @@ ArchitectureX86::CreateCpuState(CpuState*& _state)
 
 status_t
 ArchitectureX86::CreateCpuState(const void* cpuStateData, size_t size,
-	CpuState*& _state)
+	CpuState*& _state) const
 {
 	if (size != sizeof(x86_debug_cpu_state))
 		return B_BAD_VALUE;
@@ -355,7 +355,7 @@ ArchitectureX86::CreateCpuState(const void* cpuStateData, size_t size,
 status_t
 ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 	CpuState* _cpuState, bool isTopFrame, StackFrame*& _frame,
-	CpuState*& _previousCpuState)
+	CpuState*& _previousCpuState) const
 {
 	CpuStateX86* cpuState = dynamic_cast<CpuStateX86*>(_cpuState);
 
@@ -497,7 +497,7 @@ ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 void
 ArchitectureX86::UpdateStackFrameCpuState(const StackFrame* frame,
 	Image* previousImage, FunctionDebugInfo* previousFunction,
-	CpuState* previousCpuState)
+	CpuState* previousCpuState) const
 {
 	// This is not a top frame, so we want to offset eip to the previous
 	// (calling) instruction.
@@ -602,7 +602,7 @@ ArchitectureX86::ReadValueFromMemory(target_addr_t addressSpace,
 
 status_t
 ArchitectureX86::DisassembleCode(FunctionDebugInfo* function,
-	const void* buffer, size_t bufferSize, DisassembledCode*& _sourceCode)
+	const void* buffer, size_t bufferSize, DisassembledCode*& _sourceCode) const
 {
 	DisassembledCode* source = new(std::nothrow) DisassembledCode(
 		fAssemblyLanguage);
@@ -642,7 +642,7 @@ ArchitectureX86::DisassembleCode(FunctionDebugInfo* function,
 
 status_t
 ArchitectureX86::GetStatement(FunctionDebugInfo* function,
-	target_addr_t address, Statement*& _statement)
+	target_addr_t address, Statement*& _statement) const
 {
 // TODO: This is not architecture dependent anymore!
 	// get the instruction info
@@ -664,7 +664,7 @@ ArchitectureX86::GetStatement(FunctionDebugInfo* function,
 
 status_t
 ArchitectureX86::GetInstructionInfo(target_addr_t address,
-	InstructionInfo& _info, CpuState* state)
+	InstructionInfo& _info, CpuState* state) const
 {
 	// read the code - maximum x86{-64} instruction size = 15 bytes
 	uint8 buffer[16];
@@ -685,7 +685,7 @@ ArchitectureX86::GetInstructionInfo(target_addr_t address,
 
 status_t
 ArchitectureX86::ResolvePICFunctionAddress(target_addr_t instructionAddress,
-	CpuState* state, target_addr_t& _targetAddress)
+	CpuState* state, target_addr_t& _targetAddress) const
 {
 	// if the function in question is position-independent, the call
 	// will actually have taken us to its corresponding PLT slot.
@@ -710,7 +710,7 @@ ArchitectureX86::ResolvePICFunctionAddress(target_addr_t instructionAddress,
 
 status_t
 ArchitectureX86::GetWatchpointDebugCapabilities(int32& _maxRegisterCount,
-	int32& _maxBytesPerRegister, uint8& _watchpointCapabilityFlags)
+	int32& _maxBytesPerRegister, uint8& _watchpointCapabilityFlags) const
 {
 	// while x86 technically has 4 hardware debug registers, one is reserved by
 	// the kernel, and one is required for breakpoint support, which leaves
@@ -728,7 +728,7 @@ ArchitectureX86::GetWatchpointDebugCapabilities(int32& _maxRegisterCount,
 
 status_t
 ArchitectureX86::GetReturnAddressLocation(StackFrame* frame,
-	target_size_t valueSize, ValueLocation*& _location)
+	target_size_t valueSize, ValueLocation*& _location) const
 {
 	// for the calling conventions currently in use on Haiku,
 	// the x86 rules for how values are returned are as follows:

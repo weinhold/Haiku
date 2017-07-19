@@ -97,7 +97,7 @@ status_t
 Architecture::CreateStackTrace(Team* team,
 	ImageDebugInfoProvider* imageInfoProvider, CpuState* cpuState,
 	StackTrace*& _stackTrace, ReturnValueInfoList* returnValueInfos,
-	int32 maxStackDepth, bool useExistingTrace, bool getFullFrameInfo)
+	int32 maxStackDepth, bool useExistingTrace, bool getFullFrameInfo) const
 {
 	BReference<CpuState> cpuStateReference(cpuState);
 

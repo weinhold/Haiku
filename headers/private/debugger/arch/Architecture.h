@@ -75,16 +75,16 @@ public:
 									RegisterMap** _fromDwarf) const = 0;
 										// returns references
 
-	virtual	status_t			GetCpuFeatures(uint32& flags) = 0;
+	virtual	status_t			GetCpuFeatures(uint32& flags) const = 0;
 
-	virtual	status_t			CreateCpuState(CpuState*& _state) = 0;
+	virtual	status_t			CreateCpuState(CpuState*& _state) const = 0;
 	virtual	status_t			CreateCpuState(const void* cpuStateData,
-									size_t size, CpuState*& _state) = 0;
+									size_t size, CpuState*& _state) const = 0;
 	virtual	status_t			CreateStackFrame(Image* image,
 									FunctionDebugInfo* function,
 									CpuState* cpuState, bool isTopFrame,
 									StackFrame*& _frame,
-									CpuState*& _previousCpuState) = 0;
+									CpuState*& _previousCpuState) const = 0;
 										// returns reference to previous frame
 										// and CPU state; returned CPU state
 										// can be NULL
@@ -92,7 +92,7 @@ public:
 									const StackFrame* frame,
 									Image* previousImage,
 									FunctionDebugInfo* previousFunction,
-									CpuState* previousCpuState) = 0;
+									CpuState* previousCpuState) const = 0;
 										// Called after a CreateStackFrame()
 										// with the image/function corresponding
 										// to the CPU state.
@@ -106,17 +106,17 @@ public:
 
 	virtual	status_t			DisassembleCode(FunctionDebugInfo* function,
 									const void* buffer, size_t bufferSize,
-									DisassembledCode*& _sourceCode) = 0;
+									DisassembledCode*& _sourceCode) const = 0;
 	virtual	status_t			GetStatement(FunctionDebugInfo* function,
 									target_addr_t address,
-									Statement*& _statement) = 0;
+									Statement*& _statement) const = 0;
 	virtual	status_t			GetInstructionInfo(target_addr_t address,
 									InstructionInfo& _info,
-									CpuState* state) = 0;
+									CpuState* state) const = 0;
 	virtual	status_t			ResolvePICFunctionAddress(target_addr_t
 									instructionAddress,
 									CpuState* state,
-									target_addr_t& _targetAddress) = 0;
+									target_addr_t& _targetAddress) const = 0;
 
 			status_t			CreateStackTrace(Team* team,
 									ImageDebugInfoProvider* imageInfoProvider,
@@ -125,17 +125,18 @@ public:
 									ReturnValueInfoList* returnValueInfos,
 									int32 maxStackDepth = -1,
 									bool useExistingTrace = false,
-									bool getFullFrameInfo = true);
+									bool getFullFrameInfo = true) const;
 										// team is not locked
 
 	virtual	status_t			GetWatchpointDebugCapabilities(
 									int32& _maxRegisterCount,
 									int32& _maxBytesPerRegister,
-									uint8& _watchpointCapabilityFlags) = 0;
+									uint8& _watchpointCapabilityFlags) const
+										= 0;
 
 	virtual	status_t			GetReturnAddressLocation(
 									StackFrame* frame, target_size_t valueSize,
-									ValueLocation*& _location) = 0;
+									ValueLocation*& _location) const = 0;
 
 
 protected:
