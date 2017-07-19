@@ -6,7 +6,6 @@
 #define BMESSAGE_VALUE_NODE_H
 
 #include <Message.h>
-#include <MessagePrivate.h>
 #include <ObjectList.h>
 #include <Variant.h>
 

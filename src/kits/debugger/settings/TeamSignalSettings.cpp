@@ -2,7 +2,11 @@
  * Copyright 2015, Rene Gollent, rene@gollent.com.
  * Distributed under the terms of the MIT License.
  */
+
+
 #include "TeamSignalSettings.h"
+
+#include <new>
 
 
 static const char* skDefaultSignalFieldName = "signal:default_disposition";
