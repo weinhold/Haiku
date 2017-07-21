@@ -202,19 +202,6 @@ StreamMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 
 
 status_t
-StreamMessenger::SendMessage(const BMessage& message,
-	BMessenger& replyTarget, bigtime_t timeout)
-{
-	BMessage reply;
-	status_t error = SendMessage(message, reply, timeout);
-	if (error != B_OK)
-		return error;
-
-	return replyTarget.SendMessage(&reply);
-}
-
-
-status_t
 StreamMessenger::SendReply(const BMessage& message, const BMessage& reply)
 {
 	int64 replyID;

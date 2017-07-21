@@ -9,7 +9,6 @@
 
 
 class BMessage;
-class BMessenger;
 
 
 class StreamMessenger {
@@ -35,9 +34,6 @@ public:
 	virtual	status_t			SendMessage(const BMessage& message);
 	virtual	status_t			SendMessage(const BMessage& message,
 									BMessage& _reply,
-									bigtime_t timeout = B_INFINITE_TIMEOUT);
-	virtual	status_t			SendMessage(const BMessage& message,
-									BMessenger& replyTarget,
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 	virtual	status_t			SendReply(const BMessage& message,
 									const BMessage& reply);
