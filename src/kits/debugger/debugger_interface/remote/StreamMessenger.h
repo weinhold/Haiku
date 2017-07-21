@@ -2,29 +2,30 @@
  * Copyright 2011-2016, Haiku, Inc. All Rights Reserved.
  * Distributed under the terms of the MIT License.
  */
-#ifndef SOCKET_MESSENGER_H
-#define SOCKET_MESSENGER_H
+#pragma once
+
 
 #include <Socket.h>
+
 
 class BMessage;
 class BMessenger;
 
 
-class BSocketMessenger {
+class StreamMessenger {
 public:
-								BSocketMessenger();
-								BSocketMessenger(
+								StreamMessenger();
+								StreamMessenger(
 									const BNetworkAddress& address,
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 								// adopt an existing already connected socket.
-								BSocketMessenger(const BSocket& socket);
-	virtual						~BSocketMessenger();
+								StreamMessenger(const BSocket& socket);
+	virtual						~StreamMessenger();
 
 			void				Unset();
 			status_t			SetTo(const BNetworkAddress& address,
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
-			status_t			SetTo(const BSocketMessenger& target,
+			status_t			SetTo(const StreamMessenger& target,
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 
 			status_t			InitCheck() const { return fInitStatus; }
@@ -48,8 +49,8 @@ public:
 private:
 			struct Private;
 private:
-								BSocketMessenger(const BSocketMessenger&);
-			BSocketMessenger&	operator=(const BSocketMessenger&);
+								StreamMessenger(const StreamMessenger&);
+			StreamMessenger&	operator=(const StreamMessenger&);
 
 			void				_Init();
 			status_t			_WaitForMessage(bigtime_t timeout);
@@ -65,5 +66,3 @@ private:
 			BSocket				fSocket;
 			status_t			fInitStatus;
 };
-
-#endif	// SOCKET_MESSENGER_H

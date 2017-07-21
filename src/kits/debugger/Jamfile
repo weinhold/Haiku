@@ -157,6 +157,7 @@ local sources =
 	RemoteDebugConnection.cpp
 	RemoteDebugRequest.cpp
 	RemoteProtocol.cpp
+	StreamMessenger.cpp
 
 	# elf
 	CoreFile.cpp
@@ -357,7 +358,7 @@ SharedLibrary libdebugger.so :
 	shared
 
 	[ TargetLibstdc++ ]
-	be package libbsd.so libdebug.so
+	be package libbsd.so libdebug.so bnetapi
 ;
 
 HaikuSubInclude arch x86 disasm ;

@@ -1,10 +1,11 @@
 /*
  * Copyright 2009-2011, Axel Dörfler, axeld@pinc-software.de.
  * Copyright 2016, Rene Gollent, rene@gollent.com.
+ * Copyright 2017, Ingo Weinhold, ingo_weinhold@gmx.de.
  */
 
 
-#include <SocketMessenger.h>
+#include "StreamMessenger.h"
 
 #include <Message.h>
 #include <MessageQueue.h>
@@ -19,10 +20,10 @@ static const char* kReplySenderIDField = "socket_messenger:sender_reply_id";
 static const char* kReplyReceiverIDField = "socket_messenger:reply_id";
 
 
-// #pragma mark - BSocketMessenger::Private
+// #pragma mark - StreamMessenger::Private
 
 
-struct BSocketMessenger::Private {
+struct StreamMessenger::Private {
 			typedef SynchronizedHashMap<HashKey64<int64>,
 									BMessage> ReplyMessageMap;
 
@@ -39,7 +40,7 @@ struct BSocketMessenger::Private {
 };
 
 
-BSocketMessenger::Private::Private()
+StreamMessenger::Private::Private()
 	:
 	fMessageWaiters(-1),
 	fReplyReader(-1),
@@ -50,7 +51,7 @@ BSocketMessenger::Private::Private()
 }
 
 
-BSocketMessenger::Private::~Private()
+StreamMessenger::Private::~Private()
 {
 	if (fMessageWaiters > 0)
 		delete_sem(fMessageWaiters);
@@ -62,7 +63,7 @@ BSocketMessenger::Private::~Private()
 
 
 void
-BSocketMessenger::Private::ClearMessages()
+StreamMessenger::Private::ClearMessages()
 {
 	fReceivedReplies.Clear();
 	AutoLocker<BMessageQueue> queueLocker(fReceivedMessages);
@@ -71,10 +72,10 @@ BSocketMessenger::Private::ClearMessages()
 }
 
 
-// #pragma mark - BSocketMessenger
+// #pragma mark - StreamMessenger
 
 
-BSocketMessenger::BSocketMessenger()
+StreamMessenger::StreamMessenger()
 	:
 	fPrivateData(NULL),
 	fSocket(),
@@ -84,7 +85,7 @@ BSocketMessenger::BSocketMessenger()
 }
 
 
-BSocketMessenger::BSocketMessenger(const BNetworkAddress& address,
+StreamMessenger::StreamMessenger(const BNetworkAddress& address,
 	bigtime_t timeout)
 	:
 	fPrivateData(NULL),
@@ -96,7 +97,7 @@ BSocketMessenger::BSocketMessenger(const BNetworkAddress& address,
 }
 
 
-BSocketMessenger::BSocketMessenger(const BSocket& socket)
+StreamMessenger::StreamMessenger(const BSocket& socket)
 	:
 	fPrivateData(NULL),
 	fSocket(socket),
@@ -124,7 +125,7 @@ BSocketMessenger::BSocketMessenger(const BSocket& socket)
 }
 
 
-BSocketMessenger::~BSocketMessenger()
+StreamMessenger::~StreamMessenger()
 {
 	Unset();
 
@@ -133,7 +134,7 @@ BSocketMessenger::~BSocketMessenger()
 
 
 void
-BSocketMessenger::Unset()
+StreamMessenger::Unset()
 {
 	if (fPrivateData == NULL)
 		return;
@@ -150,7 +151,7 @@ BSocketMessenger::Unset()
 
 
 status_t
-BSocketMessenger::SetTo(const BNetworkAddress& address, bigtime_t timeout)
+StreamMessenger::SetTo(const BNetworkAddress& address, bigtime_t timeout)
 {
 	Unset();
 
@@ -172,21 +173,21 @@ BSocketMessenger::SetTo(const BNetworkAddress& address, bigtime_t timeout)
 
 
 status_t
-BSocketMessenger::SetTo(const BSocketMessenger& target, bigtime_t timeout)
+StreamMessenger::SetTo(const StreamMessenger& target, bigtime_t timeout)
 {
 	return SetTo(target.Address(), timeout);
 }
 
 
 status_t
-BSocketMessenger::SendMessage(const BMessage& message)
+StreamMessenger::SendMessage(const BMessage& message)
 {
 	return _SendMessage(message);
 }
 
 
 status_t
-BSocketMessenger::SendMessage(const BMessage& message, BMessage& _reply,
+StreamMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 	bigtime_t timeout)
 {
 	int64 replyID = atomic_add64(&fPrivateData->fReplyIDCounter, 1);
@@ -201,7 +202,7 @@ BSocketMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 
 
 status_t
-BSocketMessenger::SendMessage(const BMessage& message,
+StreamMessenger::SendMessage(const BMessage& message,
 	BMessenger& replyTarget, bigtime_t timeout)
 {
 	BMessage reply;
@@ -214,7 +215,7 @@ BSocketMessenger::SendMessage(const BMessage& message,
 
 
 status_t
-BSocketMessenger::SendReply(const BMessage& message, const BMessage& reply)
+StreamMessenger::SendReply(const BMessage& message, const BMessage& reply)
 {
 	int64 replyID;
 	if (message.FindInt64(kReplySenderIDField, &replyID) != B_OK)
@@ -227,7 +228,7 @@ BSocketMessenger::SendReply(const BMessage& message, const BMessage& reply)
 
 
 status_t
-BSocketMessenger::ReceiveMessage(BMessage& _message, bigtime_t timeout)
+StreamMessenger::ReceiveMessage(BMessage& _message, bigtime_t timeout)
 {
 	status_t error = B_OK;
 	AutoLocker<BMessageQueue> queueLocker(fPrivateData->fReceivedMessages);
@@ -256,13 +257,13 @@ BSocketMessenger::ReceiveMessage(BMessage& _message, bigtime_t timeout)
 
 
 void
-BSocketMessenger::_Init()
+StreamMessenger::_Init()
 {
 	if (fPrivateData != NULL)
 		return;
 
-	BSocketMessenger::Private* data
-		= new(std::nothrow) BSocketMessenger::Private;
+	StreamMessenger::Private* data
+		= new(std::nothrow) StreamMessenger::Private;
 
 	if (data == NULL) {
 		fInitStatus = B_NO_MEMORY;
@@ -281,7 +282,7 @@ BSocketMessenger::_Init()
 
 
 status_t
-BSocketMessenger::_WaitForMessage(bigtime_t timeout)
+StreamMessenger::_WaitForMessage(bigtime_t timeout)
 {
 	for (;;) {
 		status_t error = acquire_sem_etc(fPrivateData->fMessageWaiters, 1,
@@ -301,7 +302,7 @@ BSocketMessenger::_WaitForMessage(bigtime_t timeout)
 
 
 status_t
-BSocketMessenger::_SendMessage(const BMessage& message)
+StreamMessenger::_SendMessage(const BMessage& message)
 {
 	ssize_t flatSize = message.FlattenedSize();
 	ssize_t totalSize = flatSize + sizeof(ssize_t);
@@ -326,7 +327,7 @@ BSocketMessenger::_SendMessage(const BMessage& message)
 
 
 status_t
-BSocketMessenger::_ReadMessage(BMessage& _message)
+StreamMessenger::_ReadMessage(BMessage& _message)
 {
 	status_t error = fSocket.WaitForReadable(B_INFINITE_TIMEOUT);
 	if (error != B_OK)
@@ -360,7 +361,7 @@ BSocketMessenger::_ReadMessage(BMessage& _message)
 
 
 status_t
-BSocketMessenger::_ReadReply(const int64 replyID, BMessage& reply,
+StreamMessenger::_ReadReply(const int64 replyID, BMessage& reply,
 	bigtime_t timeout)
 {
 	status_t error = B_OK;
@@ -384,10 +385,10 @@ BSocketMessenger::_ReadReply(const int64 replyID, BMessage& reply,
 
 
 status_t
-BSocketMessenger::_MessageReader(void* arg)
+StreamMessenger::_MessageReader(void* arg)
 {
-	BSocketMessenger* messenger = (BSocketMessenger*)arg;
-	BSocketMessenger::Private* data = messenger->fPrivateData;
+	StreamMessenger* messenger = (StreamMessenger*)arg;
+	StreamMessenger::Private* data = messenger->fPrivateData;
 	status_t error = B_OK;
 
 	for (;;) {
