@@ -62,7 +62,6 @@ for architectureObject in [ MultiArchSubDirSetup ] {
 			ProxySecureSocket.cpp
 			SecureSocket.cpp
 			Socket.cpp
-			SocketMessenger.cpp
 
 			# TODO: another add-on for file:// (a much simpler one)
 			FileRequest.cpp
