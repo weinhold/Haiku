@@ -8,16 +8,42 @@
 #include "StreamMessenger.h"
 
 #include <Message.h>
-#include <MessageQueue.h>
 #include <Messenger.h>
+#include <ObjectList.h>
 
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
 #include <HashMap.h>
 
 
-static const char* kReplySenderIDField = "socket_messenger:sender_reply_id";
-static const char* kReplyReceiverIDField = "socket_messenger:reply_id";
+namespace {
+
+
+static const uint64 kIsReplyFlag		= 0x8000000000000000;
+static const uint64 kSizeMask			= 0x7fffffffffffffff;
+static const uint64 kMaxSaneMessageSize	= 10 * 1024 * 1024;
+
+
+struct MessageHeader {
+	uint64	size;
+	uint64	id;
+};
+
+
+} // anonymous namespace
+
+
+struct StreamMessenger::Message {
+	MessageId	fId;
+	BMessage	fMessage;
+
+	Message(MessageId id, const BMessage& message)
+		:
+		fId(id),
+		fMessage(message)
+	{
+	}
+};
 
 
 // #pragma mark - StreamMessenger::Private
@@ -26,50 +52,52 @@ static const char* kReplyReceiverIDField = "socket_messenger:reply_id";
 struct StreamMessenger::Private {
 			typedef SynchronizedHashMap<HashKey64<int64>,
 									BMessage> ReplyMessageMap;
+	Private()
+		:
+		fMessageWaiters(-1),
+		fReplyReader(-1),
+		fReceivedReplies(),
+		fReceivedMessages(16, true),
+		fReplyIDCounter(0)
+	{
+	}
 
-								Private();
-	virtual						~Private();
+	~Private()
+	{
+		if (fMessageWaiters > 0)
+			delete_sem(fMessageWaiters);
+		if (fReplyReader > 0)
+			wait_for_thread(fReplyReader, NULL);
 
-			void				ClearMessages();
+		ClearMessages();
+	}
 
-			sem_id				fMessageWaiters;
-			thread_id			fReplyReader;
-			ReplyMessageMap		fReceivedReplies;
-			BMessageQueue		fReceivedMessages;
-			int64				fReplyIDCounter;
+	void ClearMessages()
+	{
+		fReceivedReplies.Clear();
+		AutoLocker<BLocker> queueLocker(fReceivedMessageLock);
+		for (int32 i = 0; Message* message = fReceivedMessages.ItemAt(i); i++)
+			delete message;
+	}
+
+	uint64 NextMessageId()
+	{
+		return (uint64)atomic_add64(&fReplyIDCounter, 1);
+	}
+
+public:
+	typedef BObjectList<Message> MessageQueue;
+
+public:
+	sem_id				fMessageWaiters;
+	thread_id			fReplyReader;
+	ReplyMessageMap		fReceivedReplies;
+	BLocker				fReceivedMessageLock;
+	MessageQueue		fReceivedMessages;
+
+private:
+	int64				fReplyIDCounter;
 };
-
-
-StreamMessenger::Private::Private()
-	:
-	fMessageWaiters(-1),
-	fReplyReader(-1),
-	fReceivedReplies(),
-	fReceivedMessages(),
-	fReplyIDCounter(0)
-{
-}
-
-
-StreamMessenger::Private::~Private()
-{
-	if (fMessageWaiters > 0)
-		delete_sem(fMessageWaiters);
-	if (fReplyReader > 0)
-		wait_for_thread(fReplyReader, NULL);
-
-	ClearMessages();
-}
-
-
-void
-StreamMessenger::Private::ClearMessages()
-{
-	fReceivedReplies.Clear();
-	AutoLocker<BMessageQueue> queueLocker(fReceivedMessages);
-	while (!fReceivedMessages.IsEmpty())
-		delete fReceivedMessages.NextMessage();
-}
 
 
 // #pragma mark - StreamMessenger
@@ -103,6 +131,7 @@ StreamMessenger::StreamMessenger(const BSocket& socket)
 	fSocket(socket),
 	fInitStatus(B_NO_INIT)
 {
+// TODO: some code duplication with SetTo()
 	_Init();
 	if (fPrivateData == NULL)
 		return;
@@ -111,7 +140,7 @@ StreamMessenger::StreamMessenger(const BSocket& socket)
 	if (fInitStatus != B_OK)
 		return;
 
-	fPrivateData->fReplyReader = spawn_thread(&_MessageReader,
+	fPrivateData->fReplyReader = spawn_thread(&_MessageReaderEntry,
 		"Message Reader", B_NORMAL_PRIORITY, this);
 	if (fPrivateData->fReplyReader < 0)
 		fInitStatus = fPrivateData->fReplyReader;
@@ -158,7 +187,7 @@ StreamMessenger::SetTo(const BNetworkAddress& address, bigtime_t timeout)
 	if (fPrivateData == NULL)
 		return B_NO_MEMORY;
 
-	fPrivateData->fReplyReader = spawn_thread(&_MessageReader,
+	fPrivateData->fReplyReader = spawn_thread(&_MessageReaderEntry,
 		"Message Reader", B_NORMAL_PRIORITY, this);
 	if (fPrivateData->fReplyReader < 0)
 		return fPrivateData->fReplyReader;
@@ -180,9 +209,14 @@ StreamMessenger::SetTo(const StreamMessenger& target, bigtime_t timeout)
 
 
 status_t
-StreamMessenger::SendMessage(const BMessage& message)
+StreamMessenger::SendMessage(const BMessage& message, MessageId& _messageId)
 {
-	return _SendMessage(message);
+	uint64 messageId = fPrivateData->NextMessageId();
+
+	status_t error = _SendMessage(message, messageId, false);
+	if (error == B_OK)
+		_messageId = messageId;
+	return error;
 }
 
 
@@ -190,10 +224,8 @@ status_t
 StreamMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 	bigtime_t timeout)
 {
-	int64 replyID = atomic_add64(&fPrivateData->fReplyIDCounter, 1);
-	BMessage temp(message);
-	temp.AddInt64(kReplySenderIDField, replyID);
-	status_t error = _SendMessage(temp);
+	uint64 replyID;
+	status_t error = SendMessage(message, replyID);
 	if (error != B_OK)
 		return error;
 
@@ -202,28 +234,24 @@ StreamMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 
 
 status_t
-StreamMessenger::SendReply(const BMessage& message, const BMessage& reply)
+StreamMessenger::SendReply(MessageId messageId, const BMessage& reply)
 {
-	int64 replyID;
-	if (message.FindInt64(kReplySenderIDField, &replyID) != B_OK)
-		return B_NOT_ALLOWED;
-
-	BMessage replyMessage(reply);
-	replyMessage.AddInt64(kReplyReceiverIDField, replyID);
-	return SendMessage(replyMessage);
+	return _SendMessage(reply, messageId, true);
 }
 
 
 status_t
-StreamMessenger::ReceiveMessage(BMessage& _message, bigtime_t timeout)
+StreamMessenger::ReceiveMessage(BMessage& _message, MessageId& _messageId,
+	bigtime_t timeout)
 {
 	status_t error = B_OK;
-	AutoLocker<BMessageQueue> queueLocker(fPrivateData->fReceivedMessages);
+	AutoLocker<BLocker> queueLocker(fPrivateData->fReceivedMessageLock);
 	for (;;) {
 		if (!fPrivateData->fReceivedMessages.IsEmpty()) {
-			BMessage* nextMessage
-				= fPrivateData->fReceivedMessages.NextMessage();
-			_message = *nextMessage;
+			Message* nextMessage
+				= fPrivateData->fReceivedMessages.RemoveItemAt(0);
+			_message = nextMessage->fMessage;
+			_messageId = nextMessage->fId;
 			delete nextMessage;
 			break;
 		}
@@ -289,18 +317,24 @@ StreamMessenger::_WaitForMessage(bigtime_t timeout)
 
 
 status_t
-StreamMessenger::_SendMessage(const BMessage& message)
+StreamMessenger::_SendMessage(const BMessage& message, MessageId messageId,
+	bool isReply)
 {
 	ssize_t flatSize = message.FlattenedSize();
-	ssize_t totalSize = flatSize + sizeof(ssize_t);
+	ssize_t totalSize = flatSize + sizeof(MessageHeader);
 
 	char* buffer = new(std::nothrow) char[totalSize];
 	if (buffer == NULL)
 		return B_NO_MEMORY;
 
 	ArrayDeleter<char> bufferDeleter(buffer);
-	*(ssize_t*)buffer = flatSize;
-	char* messageBuffer = buffer + sizeof(ssize_t);
+
+	MessageHeader* header = (MessageHeader*)buffer;
+	header->size = B_HOST_TO_BENDIAN_INT64(
+		totalSize | (isReply ? kIsReplyFlag : 0));
+	header->id = B_HOST_TO_BENDIAN_INT64(messageId);
+
+	char* messageBuffer = buffer + sizeof(MessageHeader);
 	status_t error = message.Flatten(messageBuffer, flatSize);
 	if (error != B_OK)
 		return error;
@@ -314,22 +348,28 @@ StreamMessenger::_SendMessage(const BMessage& message)
 
 
 status_t
-StreamMessenger::_ReadMessage(BMessage& _message)
+StreamMessenger::_ReadMessage(BMessage& _message, MessageId& _messageId,
+	bool& _isReply)
 {
 	status_t error = fSocket.WaitForReadable(B_INFINITE_TIMEOUT);
 	if (error != B_OK)
 		return error;
 
-	ssize_t size = 0;
-	ssize_t readSize = fSocket.Read(&size, sizeof(ssize_t));
+	MessageHeader header;
+	ssize_t readSize = fSocket.Read(&header, sizeof(header));
 	if (readSize < 0)
 		return readSize;
 
-	if (readSize != sizeof(ssize_t))
+// TODO: We should just continue to read!
+	if ((size_t)readSize != sizeof(header))
 		return B_BAD_VALUE;
 
-	if (size <= 0)
-		return B_MISMATCHED_VALUES;
+	header.size = B_BENDIAN_TO_HOST_INT64(header.size);
+	header.id = B_BENDIAN_TO_HOST_INT64(header.id);
+
+	if ((header.size & kSizeMask) > kMaxSaneMessageSize)
+		return B_BAD_DATA;
+	size_t size = size_t(header.size & kSizeMask);
 
 	char* buffer = new(std::nothrow) char[size];
 	if (buffer == NULL)
@@ -340,10 +380,17 @@ StreamMessenger::_ReadMessage(BMessage& _message)
 	if (readSize < 0)
 		return readSize;
 
-	if (readSize != size)
+// TODO: We should just continue to read!
+	if ((size_t)readSize != size)
 		return B_MISMATCHED_VALUES;
 
-	return _message.Unflatten(buffer);
+	error = _message.Unflatten(buffer);
+	if (error != B_OK)
+		return error;
+
+	_messageId = header.id;
+	_isReply = (header.size & kIsReplyFlag) != 0;
+	return B_OK;
 }
 
 
@@ -371,43 +418,51 @@ StreamMessenger::_ReadReply(const int64 replyID, BMessage& reply,
 }
 
 
-status_t
-StreamMessenger::_MessageReader(void* arg)
+/*static*/ status_t
+StreamMessenger::_MessageReaderEntry(void* arg)
 {
-	StreamMessenger* messenger = (StreamMessenger*)arg;
-	StreamMessenger::Private* data = messenger->fPrivateData;
+	return ((StreamMessenger*)arg)->_MessageReader();
+}
+
+status_t
+StreamMessenger::_MessageReader()
+{
 	status_t error = B_OK;
 
 	for (;;) {
 		BMessage message;
-		error = messenger->_ReadMessage(message);
+		MessageId messageId;
+		bool isReply;
+		error = _ReadMessage(message, messageId, isReply);
 		if (error != B_OK)
 			break;
 
-		int64 replyID;
-		if (message.FindInt64(kReplyReceiverIDField, &replyID) == B_OK) {
-			error = data->fReceivedReplies.Put(replyID, message);
+		if (isReply) {
+			error = fPrivateData->fReceivedReplies.Put(messageId, message);
 			if (error != B_OK)
 				break;
 		} else {
-			BMessage* queueMessage = new(std::nothrow) BMessage(message);
+			Message* queueMessage
+				= new(std::nothrow) Message(messageId, message);
 			if (queueMessage == NULL) {
 				error = B_NO_MEMORY;
 				break;
 			}
 
-			AutoLocker<BMessageQueue> queueLocker(
-				data->fReceivedMessages);
-			data->fReceivedMessages.AddMessage(queueMessage);
+			AutoLocker<BLocker> queueLocker(fPrivateData->fReceivedMessageLock);
+			if (!fPrivateData->fReceivedMessages.AddItem(queueMessage)) {
+				delete queueMessage;
+				error = B_NO_MEMORY;
+				break;
+			}
 		}
 
-
-		release_sem_etc(data->fMessageWaiters, 1, B_RELEASE_ALL);
+		release_sem_etc(fPrivateData->fMessageWaiters, 1, B_RELEASE_ALL);
 	}
 
 	// if we exit our message loop, ensure everybody wakes up and knows
 	// we're no longer receiving messages.
-	messenger->fSocket.Disconnect();
-	release_sem_etc(data->fMessageWaiters, 1, B_RELEASE_ALL);
+	fSocket.Disconnect();
+	release_sem_etc(fPrivateData->fMessageWaiters, 1, B_RELEASE_ALL);
 	return error;
 }
