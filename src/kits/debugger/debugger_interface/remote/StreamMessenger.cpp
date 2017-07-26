@@ -339,11 +339,7 @@ StreamMessenger::_SendMessage(const BMessage& message, MessageId messageId,
 	if (error != B_OK)
 		return error;
 
-	ssize_t size = fSocket.Write(buffer, totalSize);
-	if (size < 0)
-		return size;
-
-	return B_OK;
+	return fSocket.WriteExactly(buffer, totalSize);
 }
 
 
@@ -351,18 +347,10 @@ status_t
 StreamMessenger::_ReadMessage(BMessage& _message, MessageId& _messageId,
 	bool& _isReply)
 {
-	status_t error = fSocket.WaitForReadable(B_INFINITE_TIMEOUT);
+	MessageHeader header;
+	status_t error = fSocket.ReadExactly(&header, sizeof(header));
 	if (error != B_OK)
 		return error;
-
-	MessageHeader header;
-	ssize_t readSize = fSocket.Read(&header, sizeof(header));
-	if (readSize < 0)
-		return readSize;
-
-// TODO: We should just continue to read!
-	if ((size_t)readSize != sizeof(header))
-		return B_BAD_VALUE;
 
 	header.size = B_BENDIAN_TO_HOST_INT64(header.size);
 	header.id = B_BENDIAN_TO_HOST_INT64(header.id);
@@ -376,13 +364,9 @@ StreamMessenger::_ReadMessage(BMessage& _message, MessageId& _messageId,
 		return B_NO_MEMORY;
 
 	ArrayDeleter<char> bufferDeleter(buffer);
-	readSize = fSocket.Read(buffer, size);
-	if (readSize < 0)
-		return readSize;
-
-// TODO: We should just continue to read!
-	if ((size_t)readSize != size)
-		return B_MISMATCHED_VALUES;
+	error = fSocket.ReadExactly(buffer, size);
+	if (error != B_OK)
+		return error;
 
 	error = _message.Unflatten(buffer);
 	if (error != B_OK)
@@ -423,6 +407,7 @@ StreamMessenger::_MessageReaderEntry(void* arg)
 {
 	return ((StreamMessenger*)arg)->_MessageReader();
 }
+
 
 status_t
 StreamMessenger::_MessageReader()
