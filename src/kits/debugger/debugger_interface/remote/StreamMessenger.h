@@ -22,7 +22,7 @@ public:
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 								// adopt an existing already connected socket.
 								StreamMessenger(const BSocket& socket);
-	virtual						~StreamMessenger();
+								~StreamMessenger();
 
 			void				Unset();
 			status_t			SetTo(const BNetworkAddress& address,
@@ -34,16 +34,16 @@ public:
 
 			const BNetworkAddress& Address() const { return fSocket.Peer(); }
 
-	virtual	status_t			SendMessage(const BMessage& message,
+			status_t			SendMessage(const BMessage& message,
 									MessageId& _messageId);
-	virtual	status_t			SendMessage(const BMessage& message,
+			status_t			SendMessage(const BMessage& message,
 									BMessage& _reply,
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
-	virtual	status_t			SendReply(MessageId messageId,
+			status_t			SendReply(MessageId messageId,
 									const BMessage& reply);
 
 								// wait for unsolicited message on socket
-	virtual	status_t			ReceiveMessage(BMessage& _message,
+			status_t			ReceiveMessage(BMessage& _message,
 									MessageId& _messageId,
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 
