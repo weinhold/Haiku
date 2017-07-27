@@ -15,6 +15,8 @@
 #include <AutoLocker.h>
 #include <HashMap.h>
 
+#include "Stream.h"
+
 
 namespace {
 
@@ -54,6 +56,7 @@ struct StreamMessenger::Private {
 									BMessage> ReplyMessageMap;
 	Private()
 		:
+		fStream(NULL),
 		fMessageWaiters(-1),
 		fReplyReader(-1),
 		fReceivedReplies(),
@@ -89,6 +92,7 @@ public:
 	typedef BObjectList<Message> MessageQueue;
 
 public:
+	Stream*				fStream;
 	sem_id				fMessageWaiters;
 	thread_id			fReplyReader;
 	ReplyMessageMap		fReceivedReplies;
@@ -105,60 +109,39 @@ private:
 
 StreamMessenger::StreamMessenger()
 	:
-	fPrivateData(NULL),
-	fSocket(),
-	fInitStatus(B_NO_INIT)
+	fPrivateData(NULL)
 {
-	_Init();
-}
-
-
-StreamMessenger::StreamMessenger(const BNetworkAddress& address,
-	bigtime_t timeout)
-	:
-	fPrivateData(NULL),
-	fSocket(),
-	fInitStatus(B_NO_INIT)
-{
-	_Init();
-	SetTo(address, timeout);
-}
-
-
-StreamMessenger::StreamMessenger(const BSocket& socket)
-	:
-	fPrivateData(NULL),
-	fSocket(socket),
-	fInitStatus(B_NO_INIT)
-{
-// TODO: some code duplication with SetTo()
-	_Init();
-	if (fPrivateData == NULL)
-		return;
-
-	fInitStatus = socket.InitCheck();
-	if (fInitStatus != B_OK)
-		return;
-
-	fPrivateData->fReplyReader = spawn_thread(&_MessageReaderEntry,
-		"Message Reader", B_NORMAL_PRIORITY, this);
-	if (fPrivateData->fReplyReader < 0)
-		fInitStatus = fPrivateData->fReplyReader;
-	if (fInitStatus != B_OK) {
-		exit_thread(fPrivateData->fReplyReader);
-		fPrivateData->fReplyReader = -1;
-		return;
-	}
-
-	fInitStatus = resume_thread(fPrivateData->fReplyReader);
 }
 
 
 StreamMessenger::~StreamMessenger()
 {
 	Unset();
+}
 
-	delete fPrivateData;
+
+status_t
+StreamMessenger::SetTo(Stream* stream)
+{
+	if (fPrivateData != NULL)
+		return B_BAD_VALUE;
+
+	fPrivateData = new(std::nothrow) StreamMessenger::Private;
+	if (fPrivateData == NULL)
+		return B_NO_MEMORY;
+
+	fPrivateData->fMessageWaiters = create_sem(0, "message waiters");
+	if (fPrivateData->fMessageWaiters < 0)
+		return fPrivateData->fMessageWaiters;
+
+	fPrivateData->fStream = stream;
+
+	fPrivateData->fReplyReader = spawn_thread(&_MessageReaderEntry,
+		"Message Reader", B_NORMAL_PRIORITY, this);
+	if (fPrivateData->fReplyReader < 0)
+		return fPrivateData->fReplyReader;
+
+	return resume_thread(fPrivateData->fReplyReader);
 }
 
 
@@ -168,43 +151,21 @@ StreamMessenger::Unset()
 	if (fPrivateData == NULL)
 		return;
 
-	fSocket.Disconnect();
-	wait_for_thread(fPrivateData->fReplyReader, NULL);
-	fPrivateData->fReplyReader = -1;
-	fPrivateData->ClearMessages();
+	if (fPrivateData->fStream != NULL)
+		fPrivateData->fStream->Close();
 
-	release_sem_etc(fPrivateData->fMessageWaiters, 1, B_RELEASE_ALL);
-
-	fInitStatus = B_NO_INIT;
-}
-
-
-status_t
-StreamMessenger::SetTo(const BNetworkAddress& address, bigtime_t timeout)
-{
-	Unset();
-
-	if (fPrivateData == NULL)
-		return B_NO_MEMORY;
-
-	fPrivateData->fReplyReader = spawn_thread(&_MessageReaderEntry,
-		"Message Reader", B_NORMAL_PRIORITY, this);
-	if (fPrivateData->fReplyReader < 0)
-		return fPrivateData->fReplyReader;
-	status_t error = fSocket.Connect(address, timeout);
-	if (error != B_OK) {
-		Unset();
-		return error;
+	if (fPrivateData->fReplyReader >= 0) {
+		wait_for_thread(fPrivateData->fReplyReader, NULL);
+		fPrivateData->fReplyReader = -1;
 	}
 
-	return fInitStatus = resume_thread(fPrivateData->fReplyReader);
-}
+	fPrivateData->ClearMessages();
 
+// TODO: This mechanism is probably racy!
+	release_sem_etc(fPrivateData->fMessageWaiters, 1, B_RELEASE_ALL);
 
-status_t
-StreamMessenger::SetTo(const StreamMessenger& target, bigtime_t timeout)
-{
-	return SetTo(target.Address(), timeout);
+	delete fPrivateData;
+	fPrivateData = NULL;
 }
 
 
@@ -260,39 +221,14 @@ StreamMessenger::ReceiveMessage(BMessage& _message, MessageId& _messageId,
 		error = _WaitForMessage(timeout);
 		if (error != B_OK)
 			break;
-		if (!fSocket.IsConnected()) {
-			error = B_CANCELED;
-			break;
-		}
+// 		if (!fSocket.IsConnected()) {
+// 			error = B_CANCELED;
+// 			break;
+// 		}
 		queueLocker.Lock();
 	}
 
 	return error;
-}
-
-
-void
-StreamMessenger::_Init()
-{
-	if (fPrivateData != NULL)
-		return;
-
-	StreamMessenger::Private* data
-		= new(std::nothrow) StreamMessenger::Private;
-
-	if (data == NULL) {
-		fInitStatus = B_NO_MEMORY;
-		return;
-	}
-
-	data->fMessageWaiters = create_sem(0, "message waiters");
-	if (data->fMessageWaiters < 0) {
-		fInitStatus = data->fMessageWaiters;
-		delete data;
-		return;
-	}
-
-	fPrivateData = data;
 }
 
 
@@ -339,7 +275,7 @@ StreamMessenger::_SendMessage(const BMessage& message, MessageId messageId,
 	if (error != B_OK)
 		return error;
 
-	return fSocket.WriteExactly(buffer, totalSize);
+	return fPrivateData->fStream->WriteExactly(buffer, totalSize);
 }
 
 
@@ -348,7 +284,8 @@ StreamMessenger::_ReadMessage(BMessage& _message, MessageId& _messageId,
 	bool& _isReply)
 {
 	MessageHeader header;
-	status_t error = fSocket.ReadExactly(&header, sizeof(header));
+	status_t error = fPrivateData->fStream->ReadExactly(&header,
+		sizeof(header));
 	if (error != B_OK)
 		return error;
 
@@ -364,7 +301,7 @@ StreamMessenger::_ReadMessage(BMessage& _message, MessageId& _messageId,
 		return B_NO_MEMORY;
 
 	ArrayDeleter<char> bufferDeleter(buffer);
-	error = fSocket.ReadExactly(buffer, size);
+	error = fPrivateData->fStream->ReadExactly(buffer, size);
 	if (error != B_OK)
 		return error;
 
@@ -392,10 +329,10 @@ StreamMessenger::_ReadReply(const int64 replyID, BMessage& reply,
 		error = _WaitForMessage(timeout);
 		if (error != B_OK)
 			break;
-		if (!fSocket.IsConnected()) {
-			error = B_CANCELED;
-			break;
-		}
+// 		if (!fSocket.IsConnected()) {
+// 			error = B_CANCELED;
+// 			break;
+// 		}
 	}
 
 	return error;
@@ -447,7 +384,6 @@ StreamMessenger::_MessageReader()
 
 	// if we exit our message loop, ensure everybody wakes up and knows
 	// we're no longer receiving messages.
-	fSocket.Disconnect();
 	release_sem_etc(fPrivateData->fMessageWaiters, 1, B_RELEASE_ALL);
 	return error;
 }

@@ -157,6 +157,7 @@ local sources =
 	RemoteDebugConnection.cpp
 	RemoteDebugRequest.cpp
 	RemoteProtocol.cpp
+	Stream.cpp
 	StreamMessenger.cpp
 
 	# elf
