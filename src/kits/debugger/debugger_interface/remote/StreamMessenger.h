@@ -38,23 +38,8 @@ public:
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 
 private:
-			struct Private;
-			struct Message;
-private:
-								StreamMessenger(const StreamMessenger&);
-			StreamMessenger&	operator=(const StreamMessenger&);
-
-			status_t			_WaitForMessage(bigtime_t timeout);
-			status_t			_SendMessage(const BMessage& message,
-									MessageId messageId, bool isReply);
-			status_t			_ReadMessage(BMessage& _message,
-									MessageId& _messageId, bool& _isReply);
-			status_t			_ReadReply(int64 replyID,
-									BMessage& _reply, bigtime_t timeout);
-
-	static	status_t			_MessageReaderEntry(void* arg);
-			status_t			_MessageReader();
+			struct Impl;
 
 private:
-			Private*			fPrivateData;
+			Impl*				fImpl;
 };
