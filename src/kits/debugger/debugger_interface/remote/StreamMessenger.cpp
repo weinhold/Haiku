@@ -7,6 +7,8 @@
 
 #include "StreamMessenger.h"
 
+#include <time.h>
+
 #include <Message.h>
 #include <Messenger.h>
 #include <ObjectList.h>
@@ -14,6 +16,7 @@
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
 #include <HashMap.h>
+#include <PthreadMutexLocker.h>
 
 #include "Stream.h"
 
@@ -52,43 +55,33 @@ struct Message {
 
 
 struct StreamMessenger::Impl {
-			typedef SynchronizedHashMap<HashKey64<int64>,
-									BMessage> ReplyMessageMap;
+	typedef HashMap<HashKey64<int64>, BMessage> ReplyMessageMap;
+
 	Impl()
 		:
+		fLock(),
+		fMessageReceivedCondition(),
+		fTerminating(false),
 		fStream(NULL),
-		fMessageWaiters(-1),
 		fReplyReader(-1),
 		fReceivedReplies(),
 		fReceivedMessages(16, true),
 		fReplyIDCounter(0)
 	{
+		pthread_mutex_init(&fLock, NULL);
+		pthread_cond_init(&fMessageReceivedCondition, NULL);
 	}
 
 	~Impl()
 	{
-		if (fMessageWaiters > 0)
-			delete_sem(fMessageWaiters);
-		if (fReplyReader > 0)
-			wait_for_thread(fReplyReader, NULL);
+		Close();
 
-		ClearMessages();
-	}
-
-	void ClearMessages()
-	{
-		fReceivedReplies.Clear();
-		AutoLocker<BLocker> queueLocker(fReceivedMessageLock);
-		for (int32 i = 0; Message* message = fReceivedMessages.ItemAt(i); i++)
-			delete message;
+		pthread_cond_destroy(&fMessageReceivedCondition);
+		pthread_mutex_destroy(&fLock);
 	}
 
 	status_t Init(Stream* stream)
 	{
-		fMessageWaiters = create_sem(0, "message waiters");
-		if (fMessageWaiters < 0)
-			return fMessageWaiters;
-
 		fStream = stream;
 
 		fReplyReader = spawn_thread(&_MessageReaderEntry,
@@ -99,21 +92,28 @@ struct StreamMessenger::Impl {
 		return resume_thread(fReplyReader);
 	}
 
-	void Uninit()
+	void Close()
 	{
+		{
+			PthreadMutexLocker locker(fLock);
+			if (fTerminating)
+				return;
+			fTerminating = true;
+			pthread_cond_broadcast(&fMessageReceivedCondition);
+		}
+
 		if (fStream != NULL)
 			fStream->Close();
 
-		if (fReplyReader >= 0) {
+		if (fReplyReader > 0) {
 			wait_for_thread(fReplyReader, NULL);
 			fReplyReader = -1;
 		}
 
-		ClearMessages();
-
-// TODO: This mechanism is probably racy!
-		if (fMessageWaiters >= 0)
-			release_sem_etc(fMessageWaiters, 1, B_RELEASE_ALL);
+		PthreadMutexLocker locker(fLock);
+		fReceivedReplies.Clear();
+		for (int32 i = 0; Message* message = fReceivedMessages.ItemAt(i); i++)
+			delete message;
 	}
 
 	status_t SendMessage(const BMessage& message, MessageId& _messageId)
@@ -145,29 +145,25 @@ struct StreamMessenger::Impl {
 	status_t ReceiveMessage(BMessage& _message, MessageId& _messageId,
 		bigtime_t timeout)
 	{
-		status_t error = B_OK;
-		AutoLocker<BLocker> queueLocker(fReceivedMessageLock);
+		PthreadMutexLocker locker(fLock);
+
 		for (;;) {
+			if (fTerminating)
+				return B_CANCELED;
+
 			if (!fReceivedMessages.IsEmpty()) {
 				Message* nextMessage = fReceivedMessages.RemoveItemAt(0);
 				_message = nextMessage->fMessage;
 				_messageId = nextMessage->fId;
 				delete nextMessage;
+				return B_OK;
 				break;
 			}
 
-			queueLocker.Unlock();
-			error = _WaitForMessage(timeout);
+			status_t error = _WaitForMessage(timeout);
 			if (error != B_OK)
-				break;
-// 			if (!fSocket.IsConnected()) {
-// 				error = B_CANCELED;
-// 				break;
-// 			}
-			queueLocker.Lock();
+				return error;
 		}
-
-		return error;
 	}
 
 private:
@@ -179,22 +175,39 @@ private:
 		return (uint64)atomic_add64(&fReplyIDCounter, 1);
 	}
 
+	/*! Waits for a newly received message. fLock must be held. */
 	status_t _WaitForMessage(bigtime_t timeout)
 	{
-		for (;;) {
-			status_t error = acquire_sem_etc(fMessageWaiters, 1,
-				B_RELATIVE_TIMEOUT, timeout);
-			if (error == B_INTERRUPTED) {
-				if (timeout != B_INFINITE_TIMEOUT)
-					timeout -= system_time();
-				continue;
+		// compute absolute timeout
+		timespec absoluteTimeout;
+		if (timeout != B_INFINITE_TIMEOUT) {
+			clock_gettime(CLOCK_REALTIME, &absoluteTimeout);
+			absoluteTimeout.tv_sec += timeout / 1000000;
+			nanotime_t nanos = (timeout % 1000000) * 1000
+				+ absoluteTimeout.tv_nsec;
+			if (nanos > 1000000000) {
+				nanos -= 1000000000;
+				absoluteTimeout.tv_sec++;
 			}
-			if (error != B_OK)
-				return error;
-			break;
+			absoluteTimeout.tv_nsec = (long)nanos;
 		}
 
-		return B_OK;
+		// wait until we get a message
+		for (;;) {
+			if (fTerminating)
+				return B_CANCELED;
+
+			status_t error;
+			if (timeout == B_INFINITE_TIMEOUT) {
+				error = pthread_cond_wait(&fMessageReceivedCondition, &fLock);
+			} else {
+				error = pthread_cond_timedwait(&fMessageReceivedCondition,
+					&fLock, &absoluteTimeout);
+			}
+			if (error == B_INTERRUPTED)
+				continue;
+			return error;
+		}
 	}
 
 	status_t _SendMessage(const BMessage& message, MessageId messageId,
@@ -258,23 +271,21 @@ private:
 	status_t _ReadReply(const int64 replyID, BMessage& reply,
 		bigtime_t timeout)
 	{
-		status_t error = B_OK;
+		PthreadMutexLocker locker(fLock);
+
 		for (;;) {
+			if (fTerminating)
+				return B_CANCELED;
+
 			if (fReceivedReplies.ContainsKey(replyID)) {
 				reply = fReceivedReplies.Remove(replyID);
-				break;
+				return B_OK;
 			}
 
-			error = _WaitForMessage(timeout);
+			status_t error = _WaitForMessage(timeout);
 			if (error != B_OK)
-				break;
-// 			if (!fSocket.IsConnected()) {
-// 				error = B_CANCELED;
-// 				break;
-// 			}
+				return error;
 		}
-
-		return error;
 	}
 
 	static status_t _MessageReaderEntry(void* arg)
@@ -295,6 +306,7 @@ private:
 				break;
 
 			if (isReply) {
+				PthreadMutexLocker locker(fLock);
 				error = fReceivedReplies.Put(messageId, message);
 				if (error != B_OK)
 					break;
@@ -306,7 +318,7 @@ private:
 					break;
 				}
 
-				AutoLocker<BLocker> queueLocker(fReceivedMessageLock);
+				PthreadMutexLocker locker(fLock);
 				if (!fReceivedMessages.AddItem(queueMessage)) {
 					delete queueMessage;
 					error = B_NO_MEMORY;
@@ -314,21 +326,25 @@ private:
 				}
 			}
 
-			release_sem_etc(fMessageWaiters, 1, B_RELEASE_ALL);
+			PthreadMutexLocker locker(fLock);
+			pthread_cond_broadcast(&fMessageReceivedCondition);
 		}
 
 		// if we exit our message loop, ensure everybody wakes up and knows
 		// we're no longer receiving messages.
-		release_sem_etc(fMessageWaiters, 1, B_RELEASE_ALL);
+		PthreadMutexLocker locker(fLock);
+		fTerminating = true;
+		pthread_cond_broadcast(&fMessageReceivedCondition);
 		return error;
 	}
 
 private:
+	pthread_mutex_t		fLock;
+	pthread_cond_t		fMessageReceivedCondition;
+	bool				fTerminating;
 	Stream*				fStream;
-	sem_id				fMessageWaiters;
 	thread_id			fReplyReader;
 	ReplyMessageMap		fReceivedReplies;
-	BLocker				fReceivedMessageLock;
 	MessageQueue		fReceivedMessages;
 	int64				fReplyIDCounter;
 };
@@ -370,10 +386,20 @@ StreamMessenger::Unset()
 	if (fImpl == NULL)
 		return;
 
-	fImpl->Uninit();
+	fImpl->Close();
 
 	delete fImpl;
 	fImpl = NULL;
+}
+
+
+void
+StreamMessenger::Close()
+{
+	if (fImpl == NULL)
+		return;
+
+	fImpl->Close();
 }
 
 

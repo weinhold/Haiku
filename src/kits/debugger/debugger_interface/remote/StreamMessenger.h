@@ -23,6 +23,11 @@ public:
 
 			status_t			SetTo(Stream* stream);
 			void				Unset();
+									// Must not be called while SendMessage(),
+									// SendReply(), ReceiveMessage() calls are
+									// being made.
+
+			void				Close();
 
 			status_t			SendMessage(const BMessage& message,
 									MessageId& _messageId);
