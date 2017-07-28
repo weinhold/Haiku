@@ -153,6 +153,8 @@ local sources =
 	LocalDebuggerInterface.cpp
 
 	# debugger_interface/remote
+	MessageRemoteDebugClientConnection.cpp
+	MessageRemoteDebugServerConnection.cpp
 	Messenger.cpp
 	RemoteDebuggerInterface.cpp
 	RemoteDebugClientConnection.cpp
