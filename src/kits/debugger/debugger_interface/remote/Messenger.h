@@ -5,40 +5,37 @@
 #pragma once
 
 
-#include "Messenger.h"
+#include <OS.h>
 
 
-struct Stream;
+class BMessage;
 
 
-struct StreamMessenger : Messenger {
-								StreamMessenger();
-	virtual						~StreamMessenger();
+struct Messenger {
+public:
+	typedef	uint64				MessageId;
 
-			status_t			SetTo(Stream* stream);
-	virtual	void				Unset();
+public:
+								Messenger();
+	virtual						~Messenger();
+
+	virtual	void				Unset() = 0;
 									// Must not be called while SendMessage(),
 									// SendReply(), ReceiveMessage() calls are
 									// being made.
 
-	virtual	void				Close();
+	virtual	void				Close() = 0;
 
 	virtual	status_t			SendMessage(const BMessage& message,
-									MessageId& _messageId);
+									MessageId& _messageId) = 0;
 	virtual	status_t			SendMessage(const BMessage& message,
 									BMessage& _reply,
-									bigtime_t timeout = B_INFINITE_TIMEOUT);
+									bigtime_t timeout = B_INFINITE_TIMEOUT) = 0;
 	virtual	status_t			SendReply(MessageId messageId,
-									const BMessage& reply);
+									const BMessage& reply) = 0;
 
 								// wait for unsolicited message on socket
 	virtual	status_t			ReceiveMessage(BMessage& _message,
 									MessageId& _messageId,
-									bigtime_t timeout = B_INFINITE_TIMEOUT);
-
-private:
-			struct Impl;
-
-private:
-			Impl*				fImpl;
+									bigtime_t timeout = B_INFINITE_TIMEOUT) = 0;
 };
