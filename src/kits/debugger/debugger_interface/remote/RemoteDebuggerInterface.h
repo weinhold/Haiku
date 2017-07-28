@@ -9,13 +9,13 @@
 #include "DebuggerInterface.h"
 
 
-class RemoteDebugConnection;
+class RemoteDebugClientConnection;
 
 
 class RemoteDebuggerInterface : public DebuggerInterface {
 public:
 								RemoteDebuggerInterface(
-									RemoteDebugConnection* connection);
+									RemoteDebugClientConnection* connection);
 	virtual						~RemoteDebuggerInterface();
 
 	virtual	status_t			Init();
@@ -79,7 +79,7 @@ public:
 									void* buffer, size_t size);
 
 private:
-			RemoteDebugConnection* fConnection;
+			RemoteDebugClientConnection* fConnection;
 			Architecture*		fArchitecture;
 };
 

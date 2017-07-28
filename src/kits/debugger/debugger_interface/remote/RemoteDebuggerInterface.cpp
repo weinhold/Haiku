@@ -12,7 +12,7 @@
 
 #include "ArchitectureX86.h"
 #include "ArchitectureX8664.h"
-#include "RemoteDebugConnection.h"
+#include "RemoteDebugClientConnection.h"
 #include "RemoteDebugRequests.h"
 #include "RemoteProtocol.h"
 
@@ -22,7 +22,7 @@ namespace {
 
 template<typename RequestType>
 status_t
-sendRequest(RemoteDebugConnection& connection, const RequestType& request,
+sendRequest(RemoteDebugClientConnection& connection, const RequestType& request,
 		ObjectDeleter<typename RemoteResponse<RequestType>::Type>& _response)
 {
 	typedef typename RemoteResponse<RequestType>::Type ResponseType;
@@ -51,7 +51,7 @@ sendRequest(RemoteDebugConnection& connection, const RequestType& request,
 
 template<typename RequestType>
 status_t
-sendRequestStatusOnlyResponse(RemoteDebugConnection& connection,
+sendRequestStatusOnlyResponse(RemoteDebugClientConnection& connection,
 	const RequestType& request)
 {
 	ObjectDeleter<typename RemoteResponse<RequestType>::Type> response;
@@ -63,7 +63,7 @@ sendRequestStatusOnlyResponse(RemoteDebugConnection& connection,
 
 
 RemoteDebuggerInterface::RemoteDebuggerInterface(
-		RemoteDebugConnection* connection)
+		RemoteDebugClientConnection* connection)
 	:
 	fConnection(connection),
 	fArchitecture(NULL)
@@ -131,8 +131,7 @@ RemoteDebuggerInterface::GetArchitecture() const
 status_t
 RemoteDebuggerInterface::GetNextDebugEvent(DebugEvent*& _event)
 {
-	// TODO: implement
-	return B_UNSUPPORTED;
+	return fConnection->GetNextDebugEvent(_event);
 }
 
 
