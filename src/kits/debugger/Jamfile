@@ -11,6 +11,7 @@ UsePrivateHeaders [ FDirName debugger arch ] ;
 UsePrivateHeaders [ FDirName debugger controllers ] ;
 UsePrivateHeaders [ FDirName debugger debug_info ] ;
 UsePrivateHeaders [ FDirName debugger debug_managers ] ;
+UsePrivateHeaders [ FDirName debugger debugger_interface remote ] ;
 UsePrivateHeaders [ FDirName debugger elf ] ;
 UsePrivateHeaders [ FDirName debugger files ] ;
 UsePrivateHeaders [ FDirName debugger ids ] ;
@@ -153,6 +154,7 @@ local sources =
 	LocalDebuggerInterface.cpp
 
 	# debugger_interface/remote
+	FdStream.cpp
 	MessageRemoteDebugClientConnection.cpp
 	MessageRemoteDebugServerConnection.cpp
 	Messenger.cpp
