@@ -5,7 +5,7 @@
 #pragma once
 
 
-#include "Messenger.h"
+#include "debugger_interface/remote/Messenger.h"
 
 
 struct Stream;

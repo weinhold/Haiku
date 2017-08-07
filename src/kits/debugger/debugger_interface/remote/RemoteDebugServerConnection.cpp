@@ -4,7 +4,7 @@
  */
 
 
-#include "RemoteDebugServerConnection.h"
+#include "debugger_interface/remote/RemoteDebugServerConnection.h"
 
 
 RemoteDebugServerConnection::RemoteDebugServerConnection()

@@ -5,7 +5,7 @@
  */
 
 
-#include "StreamMessenger.h"
+#include "debugger_interface/remote/StreamMessenger.h"
 
 #include <time.h>
 
@@ -18,7 +18,7 @@
 #include <HashMap.h>
 #include <PthreadMutexLocker.h>
 
-#include "Stream.h"
+#include "debugger_interface/remote/Stream.h"
 
 
 namespace {

@@ -21,7 +21,7 @@
 #include "TeamInfo.h"
 #include "ThreadInfo.h"
 
-#include "RemoteDebugRequest.h"
+#include "debugger_interface/remote/RemoteDebugRequest.h"
 
 
 #define DEFINE_REQUEST_STRUCTS(name, requestFields, responseFields)	\

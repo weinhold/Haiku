@@ -5,7 +5,7 @@
 #pragma once
 
 
-#include "Stream.h"
+#include "debugger_interface/remote/Stream.h"
 
 
 struct FdStream : Stream {

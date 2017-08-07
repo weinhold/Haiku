@@ -4,7 +4,7 @@
  */
 
 
-#include "Stream.h"
+#include "debugger_interface/remote/Stream.h"
 
 
 Stream::~Stream()

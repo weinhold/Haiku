@@ -4,7 +4,7 @@
  */
 
 
-#include "RemoteDebugClientConnection.h"
+#include "debugger_interface/remote/RemoteDebugClientConnection.h"
 
 
 RemoteDebugClientConnection::RemoteDebugClientConnection()

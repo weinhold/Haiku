@@ -4,7 +4,7 @@
  */
 
 
-#include "RemoteDebuggerInterface.h"
+#include "debugger_interface/remote/RemoteDebuggerInterface.h"
 
 #include <new>
 
@@ -12,9 +12,9 @@
 
 #include "ArchitectureX86.h"
 #include "ArchitectureX8664.h"
-#include "RemoteDebugClientConnection.h"
-#include "RemoteDebugRequests.h"
-#include "RemoteProtocol.h"
+#include "debugger_interface/remote/RemoteDebugClientConnection.h"
+#include "debugger_interface/remote/RemoteDebugRequests.h"
+#include "debugger_interface/remote/RemoteProtocol.h"
 
 
 namespace {

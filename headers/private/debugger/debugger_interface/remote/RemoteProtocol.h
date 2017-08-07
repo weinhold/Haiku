@@ -6,7 +6,7 @@
 #define REMOTE_PROTOCOL_H
 
 
-#include "RemoteDebugRequest.h"
+#include "debugger_interface/remote/RemoteDebugRequest.h"
 
 
 class BMessage;

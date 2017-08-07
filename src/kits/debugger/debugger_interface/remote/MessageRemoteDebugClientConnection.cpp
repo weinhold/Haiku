@@ -4,13 +4,14 @@
  */
 
 
-#include "MessageRemoteDebugClientConnection.h"
+#include "debugger_interface/remote/MessageRemoteDebugClientConnection.h"
 
 #include <Message.h>
 
 #include "Architecture.h"
-#include "Messenger.h"
-#include "RemoteProtocol.h"
+
+#include "debugger_interface/remote/Messenger.h"
+#include "debugger_interface/remote/RemoteProtocol.h"
 
 
 MessageRemoteDebugClientConnection::MessageRemoteDebugClientConnection(

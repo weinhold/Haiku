@@ -4,7 +4,7 @@
  */
 
 
-#include "RemoteProtocol.h"
+#include "debugger_interface/remote/RemoteProtocol.h"
 
 #include <map>
 #include <string>
@@ -17,7 +17,7 @@
 #include "Architecture.h"
 #include "DebugEvent.h"
 #include "Register.h"
-#include "RemoteDebugRequests.h"
+#include "debugger_interface/remote/RemoteDebugRequests.h"
 
 
 namespace {

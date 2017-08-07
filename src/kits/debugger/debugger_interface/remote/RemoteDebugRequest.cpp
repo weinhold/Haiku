@@ -4,7 +4,7 @@
  */
 
 
-#include "RemoteDebugRequest.h"
+#include "debugger_interface/remote/RemoteDebugRequest.h"
 
 
 RequestInspector::~RequestInspector()

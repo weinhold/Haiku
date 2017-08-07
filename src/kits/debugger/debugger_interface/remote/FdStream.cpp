@@ -4,7 +4,7 @@
  */
 
 
-#include "FdStream.h"
+#include "debugger_interface/remote/FdStream.h"
 
 #include <errno.h>
 #include <fcntl.h>

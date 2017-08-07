@@ -7,7 +7,7 @@
 
 #include <OS.h>
 
-#include "RemoteDebugServerConnection.h"
+#include "debugger_interface/remote/RemoteDebugServerConnection.h"
 
 
 class Architecture;
