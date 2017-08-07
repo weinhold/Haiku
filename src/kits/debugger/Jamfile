@@ -163,6 +163,7 @@ local sources =
 	RemoteDebugServerConnection.cpp
 	RemoteDebugRequest.cpp
 	RemoteProtocol.cpp
+	SingleChannelMessenger.cpp
 	Stream.cpp
 	StreamMessenger.cpp
 
