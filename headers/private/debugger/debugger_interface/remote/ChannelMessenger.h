@@ -5,26 +5,21 @@
 #pragma once
 
 
-#include "debugger_interface/remote/ChannelMessenger.h"
+#include "debugger_interface/remote/Messenger.h"
 
 
-struct Stream;
+struct ChannelMessenger : Messenger {
+public:
+			typedef uint64 ChannelId;
+			struct Envelope;
 
+	static	const ChannelId		kDefaultChannelId = 0;
 
-struct StreamMessenger : ChannelMessenger {
-								StreamMessenger();
-	virtual						~StreamMessenger();
-
-			status_t			SetTo(Stream* stream);
+public:
+								ChannelMessenger();
+	virtual						~ChannelMessenger();
 
 	// Messenger
-	virtual	void				Unset();
-									// Must not be called while SendMessage(),
-									// SendReply(), ReceiveMessage() calls are
-									// being made.
-
-	virtual	void				Close();
-
 	virtual	status_t			SendMessage(const BMessage& message,
 									MessageId& _messageId);
 	virtual	status_t			SendMessage(const BMessage& message,
@@ -38,28 +33,36 @@ struct StreamMessenger : ChannelMessenger {
 									bigtime_t timeout = B_INFINITE_TIMEOUT);
 
 	// ChannelMessenger
-	virtual	status_t			NewChannel(ChannelId& _id);
-	virtual	status_t			DeleteChannel(ChannelId channelId);
+	virtual	status_t			NewChannel(ChannelId& _id) = 0;
+	virtual	status_t			DeleteChannel(ChannelId channelId) = 0;
 
 	virtual	status_t			SendMessage(ChannelId channelId,
 									const BMessage& message,
-									MessageId& _messageId);
+									MessageId& _messageId) = 0;
 	virtual	status_t			SendMessage(ChannelId channelId,
 									const BMessage& message, BMessage& _reply,
-									bigtime_t timeout = B_INFINITE_TIMEOUT);
+									bigtime_t timeout = B_INFINITE_TIMEOUT) = 0;
 	virtual	status_t			SendReply(const Envelope& envelope,
-									const BMessage& reply);
+									const BMessage& reply) = 0;
 
+								// wait for unsolicited message on socket
 	virtual	status_t			ReceiveMessage(ChannelId channelId,
 									MessageId& _messageId, BMessage& _message,
-									bigtime_t timeout = B_INFINITE_TIMEOUT);
+									bigtime_t timeout = B_INFINITE_TIMEOUT) = 0;
 	virtual	status_t			ReceiveMessage(Envelope& _envelope,
 									BMessage& _message,
-									bigtime_t timeout = B_INFINITE_TIMEOUT);
+									bigtime_t timeout = B_INFINITE_TIMEOUT) = 0;
+};
 
-private:
-			struct Impl;
 
-private:
-			Impl*				fImpl;
+struct ChannelMessenger::Envelope {
+	MessageId	messageId;
+	ChannelId	channelId;
+
+	Envelope(MessageId messageId = 0, ChannelId channelId = 0)
+		:
+		messageId(messageId),
+		channelId(channelId)
+	{
+	}
 };

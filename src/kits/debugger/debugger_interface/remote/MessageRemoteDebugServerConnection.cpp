@@ -45,7 +45,7 @@ MessageRemoteDebugServerConnection::ReceiveRequest(
 {
 	BMessage message;
 	Messenger::MessageId messageId;
-	status_t error = fMessenger->ReceiveMessage(message, messageId);
+	status_t error = fMessenger->ReceiveMessage(messageId, message);
 	if (error != B_OK) {
 		// TODO: A communication error might be fatal for the connection.
 		return error;

@@ -7,18 +7,24 @@
 
 #include "debugger_interface/remote/StreamMessenger.h"
 
+#include <assert.h>
 #include <time.h>
 
+#include <ByteOrder.h>
 #include <Message.h>
 #include <Messenger.h>
 #include <ObjectList.h>
+#include <Referenceable.h>
 
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
-#include <HashMap.h>
 #include <PthreadMutexLocker.h>
 
+#include <util/DoublyLinkedList.h>
+#include <util/OpenHashTable.h>
+
 #include "debugger_interface/remote/Stream.h"
+#include "Tracing.h"
 
 
 namespace {
@@ -29,154 +35,88 @@ static const uint64 kSizeMask			= 0x7fffffffffffffff;
 static const uint64 kMaxSaneMessageSize	= 10 * 1024 * 1024;
 
 
+typedef ChannelMessenger::ChannelId	ChannelId;
+typedef ChannelMessenger::MessageId	MessageId;
+typedef ChannelMessenger::Envelope	Envelope;
+
+
 struct MessageHeader {
 	uint64	size;
-	uint64	id;
+	uint64	messageId;
+	uint64	channelId;
 };
 
 
-struct Message {
-	StreamMessenger::MessageId	fId;
-	BMessage					fMessage;
+struct Message : DoublyLinkedListLinkImpl<Message> {
+	Envelope						envelope;
+	BMessage						message;
 
-	Message(StreamMessenger::MessageId id, const BMessage& message)
-		:
-		fId(id),
-		fMessage(message)
-	{
-	}
+	// conceptually private
+	DoublyLinkedListLink<Message>	channelLink;
+	Message*						hashTableLink;
 };
 
 
-} // anonymous namespace
+struct MessageHashTableDefinition {
+	typedef MessageId	KeyType;
+	typedef Message		ValueType;
+
+	size_t HashKey(KeyType key) const
+	{
+		return (size_t)key;
+	}
+
+	size_t Hash(ValueType* value) const
+	{
+		return HashKey(value->envelope.messageId);
+	}
+
+	bool Compare(KeyType key, ValueType* value) const
+	{
+		return value->envelope.messageId == key;
+	}
+
+	ValueType*& GetLink(ValueType* value) const
+	{
+		return value->hashTableLink;
+	}
+};
+
+typedef BOpenHashTable<MessageHashTableDefinition> MessageHashTable;
 
 
-// #pragma mark - StreamMessenger::Impl
-
-
-struct StreamMessenger::Impl {
-	typedef HashMap<HashKey64<int64>, BMessage> ReplyMessageMap;
-
-	Impl()
+template<typename ActualClass>
+struct Waiter : DoublyLinkedListLinkImpl<ActualClass> {
+	Waiter()
 		:
-		fLock(),
-		fMessageReceivedCondition(),
-		fTerminating(false),
-		fStream(NULL),
-		fReplyReader(-1),
-		fReceivedReplies(),
-		fReceivedMessages(16, true),
-		fReplyIDCounter(0)
+		fCondition(NULL),
+		fNotified(false)
 	{
-		pthread_mutex_init(&fLock, NULL);
-		pthread_cond_init(&fMessageReceivedCondition, NULL);
 	}
 
-	~Impl()
+	void Notify()
 	{
-		Close();
+		assert(fCondition != NULL);
 
-		pthread_cond_destroy(&fMessageReceivedCondition);
-		pthread_mutex_destroy(&fLock);
+		fNotified = true;
+		pthread_cond_broadcast(fCondition);
 	}
 
-	status_t Init(Stream* stream)
+	status_t Wait(pthread_mutex_t& mutex, bigtime_t timeout)
 	{
-		fStream = stream;
+		fNotified = false;
+		pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+		fCondition = &condition;
 
-		fReplyReader = spawn_thread(&_MessageReaderEntry,
-			"Message Reader", B_NORMAL_PRIORITY, this);
-		if (fReplyReader < 0)
-			return fReplyReader;
+		status_t error = _Wait(mutex, timeout);
 
-		return resume_thread(fReplyReader);
-	}
+		pthread_cond_destroy(&condition);
 
-	void Close()
-	{
-		{
-			PthreadMutexLocker locker(fLock);
-			if (fTerminating)
-				return;
-			fTerminating = true;
-			pthread_cond_broadcast(&fMessageReceivedCondition);
-		}
-
-		if (fStream != NULL)
-			fStream->Close();
-
-		if (fReplyReader > 0) {
-			wait_for_thread(fReplyReader, NULL);
-			fReplyReader = -1;
-		}
-
-		PthreadMutexLocker locker(fLock);
-		fReceivedReplies.Clear();
-		for (int32 i = 0; Message* message = fReceivedMessages.ItemAt(i); i++)
-			delete message;
-	}
-
-	status_t SendMessage(const BMessage& message, MessageId& _messageId)
-	{
-		uint64 messageId = _NextMessageId();
-
-		status_t error = _SendMessage(message, messageId, false);
-		if (error == B_OK)
-			_messageId = messageId;
 		return error;
 	}
 
-	status_t SendMessage(const BMessage& message, BMessage& _reply,
-		bigtime_t timeout)
-	{
-		uint64 replyID;
-		status_t error = SendMessage(message, replyID);
-		if (error != B_OK)
-			return error;
-
-		return _ReadReply(replyID, _reply, timeout);
-	}
-
-	status_t SendReply(MessageId messageId, const BMessage& reply)
-	{
-		return _SendMessage(reply, messageId, true);
-	}
-
-	status_t ReceiveMessage(BMessage& _message, MessageId& _messageId,
-		bigtime_t timeout)
-	{
-		PthreadMutexLocker locker(fLock);
-
-		for (;;) {
-			if (fTerminating)
-				return B_CANCELED;
-
-			if (!fReceivedMessages.IsEmpty()) {
-				Message* nextMessage = fReceivedMessages.RemoveItemAt(0);
-				_message = nextMessage->fMessage;
-				_messageId = nextMessage->fId;
-				delete nextMessage;
-				return B_OK;
-				break;
-			}
-
-			status_t error = _WaitForMessage(timeout);
-			if (error != B_OK)
-				return error;
-		}
-	}
-
 private:
-	typedef BObjectList<Message> MessageQueue;
-
-private:
-	uint64 _NextMessageId()
-	{
-		return (uint64)atomic_add64(&fReplyIDCounter, 1);
-	}
-
-	/*! Waits for a newly received message. fLock must be held. */
-	status_t _WaitForMessage(bigtime_t timeout)
+	status_t _Wait(pthread_mutex_t& mutex, bigtime_t timeout)
 	{
 		// compute absolute timeout
 		timespec absoluteTimeout;
@@ -194,23 +134,570 @@ private:
 
 		// wait until we get a message
 		for (;;) {
-			if (fTerminating)
-				return B_CANCELED;
-
 			status_t error;
 			if (timeout == B_INFINITE_TIMEOUT) {
-				error = pthread_cond_wait(&fMessageReceivedCondition, &fLock);
+				error = pthread_cond_wait(fCondition, &mutex);
 			} else {
-				error = pthread_cond_timedwait(&fMessageReceivedCondition,
-					&fLock, &absoluteTimeout);
+				error = pthread_cond_timedwait(fCondition, &mutex,
+					&absoluteTimeout);
 			}
-			if (error == B_INTERRUPTED)
-				continue;
-			return error;
+
+			// Regardless of the error. If notified, things are good.
+			if (fNotified)
+				return B_OK;
+
+			if (error != B_OK) {
+				if (error == B_INTERRUPTED)
+					continue;
+				return error;
+			}
 		}
 	}
 
-	status_t _SendMessage(const BMessage& message, MessageId messageId,
+private:
+	pthread_cond_t*	fCondition;
+	bool			fNotified;
+};
+
+
+template<typename Waiter>
+struct WaiterQueue {
+	WaiterQueue()
+		:
+		fWaiters()
+	{
+	}
+
+	Waiter* NotifyOne()
+	{
+		Waiter* waiter = fWaiters.RemoveHead();
+		if (waiter != NULL)
+			waiter->Notify();
+
+		return waiter;
+	}
+
+	void NotifyAll()
+	{
+		while (NotifyOne()) {
+		}
+	}
+
+	status_t Wait(Waiter& waiter, pthread_mutex_t& mutex, bigtime_t timeout)
+	{
+		fWaiters.Add(&waiter);
+		return waiter.Wait(mutex, timeout);
+	}
+
+private:
+	typedef DoublyLinkedList<Waiter> WaiterList;
+
+private:
+	WaiterList	fWaiters;
+};
+
+
+struct MessageWaiter : Waiter<MessageWaiter> {
+	MessageWaiter()
+		:
+		fMessage(NULL)
+	{
+	}
+
+	Message* GetMessage() const
+	{
+		return fMessage;
+	}
+
+	void SetMessage(Message* message)
+	{
+		fMessage = message;
+	}
+
+private:
+	Message*	fMessage;
+};
+
+
+struct ReplyWaiter : MessageWaiter {
+	ReplyWaiter(MessageId messageId)
+		:
+		MessageWaiter(),
+		fMessageId(messageId)
+	{
+	}
+
+	MessageId GetMessageId() const
+	{
+		return fMessageId;
+	}
+
+	void SetMessageId(MessageId messageId)
+	{
+		fMessageId = messageId;
+	}
+
+	ReplyWaiter*& HashTableNext()
+	{
+		return fHashTableNext;
+	}
+
+private:
+	MessageId		fMessageId;
+	ReplyWaiter*	fHashTableNext;
+};
+
+
+struct ReplyWaiterHashTableDefinition {
+	typedef MessageId	KeyType;
+	typedef ReplyWaiter	ValueType;
+
+	size_t HashKey(KeyType key) const
+	{
+		return (size_t)key;
+	}
+
+	size_t Hash(ValueType* value) const
+	{
+		return HashKey(value->GetMessageId());
+	}
+
+	bool Compare(KeyType key, ValueType* value) const
+	{
+		return value->GetMessageId() == key;
+	}
+
+	ValueType*& GetLink(ValueType* value) const
+	{
+		return value->HashTableNext();
+	}
+};
+
+typedef BOpenHashTable<ReplyWaiterHashTableDefinition> ReplyWaiterHashTable;
+
+
+template<typename GetLink>
+struct BlockingMessageQueue {
+	BlockingMessageQueue()
+		:
+		fMessages(),
+		fWaiters(),
+		fClosed(false)
+	{
+	}
+
+	void Close()
+	{
+		fClosed = true;
+		fWaiters.NotifyAll();
+	}
+
+	bool IsClosed() const
+	{
+		return fClosed;
+	}
+
+	/*!	Appends the message to the queue. Returns whether the message has been
+		appended: false, if it has already been assigned to a waiter.
+	*/
+	bool AppendMessage(Message* message)
+	{
+		if (MessageWaiter* waiter = fWaiters.NotifyOne()) {
+			waiter->SetMessage(message);
+			return false;
+		}
+
+		fMessages.Add(message);
+		return true;
+	}
+
+	Message* PopMessage()
+	{
+		return fMessages.RemoveHead();
+	}
+
+	status_t PopMessage(pthread_mutex_t& mutex, bigtime_t timeout,
+		Message*& _message)
+	{
+		if (fClosed)
+			return B_CANCELED;
+
+		if (Message* message = fMessages.RemoveHead()) {
+			assert(message != NULL);
+			_message = message;
+			return B_OK;
+		}
+
+		MessageWaiter waiter;
+		status_t error = fWaiters.Wait(waiter, mutex, timeout);
+		if (error != B_OK)
+			return error;
+		if (fClosed)
+			return B_CANCELED;
+
+		assert(waiter.GetMessage() != NULL);
+		_message = waiter.GetMessage();
+		return B_OK;
+	}
+
+	void RemoveMessage(Message* message)
+	{
+		fMessages.Remove(message);
+	}
+
+private:
+	typedef DoublyLinkedList<Message, GetLink> MessageList;
+
+private:
+	MessageList					fMessages;
+	WaiterQueue<MessageWaiter>	fWaiters;
+	bool						fClosed;
+};
+
+
+typedef BlockingMessageQueue<DoublyLinkedListStandardGetLink<Message> >
+	MessageQueue;
+typedef BlockingMessageQueue<
+	DoublyLinkedListMemberGetLink<Message,
+		&Message::channelLink> > ChannelMessageQueue;
+
+
+struct Channel : BReferenceable, ChannelMessageQueue {
+	Channel(ChannelId id)
+		:
+		fId(id),
+		fHashTableNext(NULL)
+	{
+	}
+
+	~Channel()
+	{
+	}
+
+	ChannelId Id() const
+	{
+		return fId;
+	}
+
+	Channel*& HashTableNext()
+	{
+		return fHashTableNext;
+	}
+
+private:
+	ChannelId			fId;
+	ChannelMessageQueue	fMessages;
+	pthread_cond_t		fMessageAvailableCondition;
+	Channel*			fHashTableNext;
+};
+
+
+struct ChannelHashTableDefinition {
+	typedef ChannelId	KeyType;
+	typedef Channel		ValueType;
+
+	size_t HashKey(KeyType key) const
+	{
+		return (size_t)key;
+	}
+
+	size_t Hash(ValueType* value) const
+	{
+		return HashKey(value->Id());
+	}
+
+	bool Compare(KeyType key, ValueType* value) const
+	{
+		return value->Id() == key;
+	}
+
+	ValueType*& GetLink(ValueType* value) const
+	{
+		return value->HashTableNext();
+	}
+};
+
+
+typedef BOpenHashTable<ChannelHashTableDefinition> ChannelHashTable;
+
+
+} // anonymous namespace
+
+
+// #pragma mark - StreamMessenger::Impl
+
+
+struct StreamMessenger::Impl {
+	Impl()
+		:
+		fLock(),
+		fTerminating(false),
+		fStream(NULL),
+		fDefaultChannel(NULL),
+		fReplyReader(-1),
+		fReplyWaiters(),
+		fChannels(),
+		fReceivedMessages(),
+		fChannelIdCounter(kDefaultChannelId + 1),
+		fReplyIdCounter(0)
+	{
+		pthread_mutex_init(&fLock, NULL);
+	}
+
+	~Impl()
+	{
+		Close();
+
+		pthread_mutex_destroy(&fLock);
+	}
+
+	status_t Init(Stream* stream)
+	{
+		fStream = stream;
+
+		status_t error = fReplyWaiters.Init();
+		if (error != B_OK)
+			return error;
+
+		error = fChannels.Init();
+		if (error != B_OK)
+			return error;
+
+		error = _NewChannel(kDefaultChannelId);
+		if (error != B_OK)
+			return error;
+
+		fReplyReader = spawn_thread(&_MessageReaderEntry,
+			"Message Reader", B_NORMAL_PRIORITY, this);
+		if (fReplyReader < 0)
+			return fReplyReader;
+
+		return resume_thread(fReplyReader);
+	}
+
+	void Close()
+	{
+		if (!_Close())
+			return;
+
+		if (fReplyReader > 0) {
+			wait_for_thread(fReplyReader, NULL);
+			fReplyReader = -1;
+		}
+
+		PthreadMutexLocker locker(fLock);
+
+		// close all channels
+		for (Channel* channel = fChannels.Clear(true);
+				channel != NULL;) {
+			Channel* next = channel->HashTableNext();
+			_CloseChannelLocked(channel);
+			channel->ReleaseReference();
+			channel = next;
+		}
+
+		// delete all remaining messages (shouldn't be any)
+		while (Message* message = fReceivedMessages.PopMessage())
+			delete message;
+	}
+
+	status_t NewChannel(ChannelId& _id)
+	{
+		ChannelId channelId = _NextChannelId();
+		status_t error = _NewChannel(channelId);
+		if (error != B_OK)
+			return error;
+
+		_id = channelId;
+		return B_OK;
+	}
+
+	status_t DeleteChannel(ChannelId channelId)
+	{
+		if (channelId == kDefaultChannelId)
+			return B_NOT_ALLOWED;
+
+		Channel* channel = _RemoveChannel(channelId);
+		if (channel == NULL)
+			return B_BAD_VALUE;
+
+
+		channel->ReleaseReference();
+		return B_OK;
+	}
+
+	status_t SendMessage(ChannelId channelId, const BMessage& message,
+		MessageId& _messageId)
+	{
+		uint64 messageId = _NextMessageId();
+
+		status_t error = _SendMessage(Envelope(messageId, channelId), message,
+			false);
+		if (error == B_OK)
+			_messageId = messageId;
+		return error;
+	}
+
+	status_t SendMessage(ChannelId channelId, const BMessage& message,
+		BMessage& _reply, bigtime_t timeout)
+	{
+		uint64 messageId = _NextMessageId();
+
+		// register the reply waiter
+		PthreadMutexLocker locker(fLock);
+
+		ReplyWaiter waiter(messageId);
+		fReplyWaiters.Insert(&waiter);
+
+		locker.Unlock();
+
+		// send the message
+		status_t error = _SendMessage(Envelope(messageId, channelId), message,
+			false);
+
+		locker.Lock();
+
+		if (error != B_OK) {
+			// sending failed
+			fReplyWaiters.Remove(&waiter);
+			return error;
+		}
+
+		// wait for the reply
+		error = waiter.Wait(fLock, timeout);
+		if (error != B_OK) {
+			fReplyWaiters.Remove(&waiter);
+			return error;
+		}
+
+		Message* reply = waiter.GetMessage();
+		ObjectDeleter<Message> replyDeleter(reply);
+		assert(reply != NULL);
+
+		_reply = reply->message;
+		return B_OK;
+	}
+
+	status_t SendReply(const Envelope& envelope, const BMessage& reply)
+	{
+		return _SendMessage(envelope, reply, true);
+	}
+
+	status_t ReceiveMessage(ChannelId channelId, MessageId& _messageId,
+		BMessage& _message, bigtime_t timeout)
+	{
+		PthreadMutexLocker locker(fLock);
+
+		Channel* channel = fChannels.Lookup(channelId);
+		if (channel == NULL)
+			return B_BAD_VALUE;
+		BReference<Channel> channelReference(channel);
+
+		Message* message;
+		status_t error = channel->PopMessage(fLock, timeout, message);
+		if (error != B_OK)
+			return error;
+
+		fReceivedMessages.RemoveMessage(message);
+		_messageId = message->envelope.messageId;
+		_message = message->message;
+		delete message;
+		return B_OK;
+	}
+
+	status_t ReceiveMessage(Envelope& _envelope, BMessage& _message,
+		bigtime_t timeout)
+	{
+		PthreadMutexLocker locker(fLock);
+
+		Message* message;
+		status_t error = fReceivedMessages.PopMessage(fLock, timeout, message);
+		if (error != B_OK)
+			return error;
+
+		_RemoveReceivedMessageFromChannel(message);
+		_envelope = message->envelope;
+		_message = message->message;
+		delete message;
+		return B_OK;
+	}
+
+private:
+	uint64 _NextChannelId()
+	{
+		return (uint64)atomic_add64(&fChannelIdCounter, 1);
+	}
+
+	uint64 _NextMessageId()
+	{
+		return (uint64)atomic_add64(&fReplyIdCounter, 1);
+	}
+
+	status_t _NewChannel(ChannelId channelId)
+	{
+		Channel* channel = new(std::nothrow) Channel(channelId);
+		if (channel == NULL)
+			return B_NO_MEMORY;
+
+		PthreadMutexLocker locker(fLock);
+
+		if (fTerminating) {
+			delete channel;
+			return B_NO_INIT;
+		}
+
+		fChannels.Insert(channel);
+		return B_OK;
+	}
+
+	Channel* _RemoveChannel(ChannelId channelId)
+	{
+		PthreadMutexLocker locker(fLock);
+
+		if (Channel* channel = fChannels.Lookup(channelId)) {
+			fChannels.Remove(channel);
+			_CloseChannelLocked(channel);
+			return channel;
+		}
+
+		return NULL;
+	}
+
+	void _CloseChannelLocked(Channel* channel)
+	{
+		channel->Close();
+
+		while (Message* message = channel->PopMessage()) {
+			fReceivedMessages.RemoveMessage(message);
+			delete message;
+		}
+	}
+
+	bool _Close()
+	{
+		{
+			PthreadMutexLocker locker(fLock);
+			if (fTerminating)
+				return false;
+			fTerminating = true;
+
+			fReceivedMessages.Close();
+
+			for (ReplyWaiterHashTable::Iterator it
+						= fReplyWaiters.GetIterator();
+					ReplyWaiter* waiter = it.Next();) {
+				waiter->Notify();
+			}
+			fReplyWaiters.Clear();
+		}
+
+		if (fStream != NULL)
+			fStream->Close();
+
+		return true;
+	}
+
+	status_t _SendMessage(const Envelope& envelope, const BMessage& message,
 		bool isReply)
 	{
 		ssize_t flatSize = message.FlattenedSize();
@@ -225,7 +712,8 @@ private:
 		MessageHeader* header = (MessageHeader*)buffer;
 		header->size = B_HOST_TO_BENDIAN_INT64(
 			totalSize | (isReply ? kIsReplyFlag : 0));
-		header->id = B_HOST_TO_BENDIAN_INT64(messageId);
+		header->messageId = B_HOST_TO_BENDIAN_INT64(envelope.messageId);
+		header->channelId = B_HOST_TO_BENDIAN_INT64(envelope.channelId);
 
 		char* messageBuffer = buffer + sizeof(MessageHeader);
 		status_t error = message.Flatten(messageBuffer, flatSize);
@@ -235,7 +723,7 @@ private:
 		return fStream->WriteExactly(buffer, totalSize);
 	}
 
-	status_t _ReadMessage(BMessage& _message, MessageId& _messageId,
+	status_t _ReadMessage(Envelope& _envelope, BMessage& _message,
 		bool& _isReply)
 	{
 		MessageHeader header;
@@ -244,7 +732,8 @@ private:
 			return error;
 
 		header.size = B_BENDIAN_TO_HOST_INT64(header.size);
-		header.id = B_BENDIAN_TO_HOST_INT64(header.id);
+		header.messageId = B_BENDIAN_TO_HOST_INT64(header.messageId);
+		header.channelId = B_BENDIAN_TO_HOST_INT64(header.channelId);
 
 		if ((header.size & kSizeMask) > kMaxSaneMessageSize)
 			return B_BAD_DATA;
@@ -263,29 +752,10 @@ private:
 		if (error != B_OK)
 			return error;
 
-		_messageId = header.id;
+		_envelope.messageId = header.messageId;
+		_envelope.channelId = header.channelId;
 		_isReply = (header.size & kIsReplyFlag) != 0;
 		return B_OK;
-	}
-
-	status_t _ReadReply(const int64 replyID, BMessage& reply,
-		bigtime_t timeout)
-	{
-		PthreadMutexLocker locker(fLock);
-
-		for (;;) {
-			if (fTerminating)
-				return B_CANCELED;
-
-			if (fReceivedReplies.ContainsKey(replyID)) {
-				reply = fReceivedReplies.Remove(replyID);
-				return B_OK;
-			}
-
-			status_t error = _WaitForMessage(timeout);
-			if (error != B_OK)
-				return error;
-		}
 	}
 
 	static status_t _MessageReaderEntry(void* arg)
@@ -298,55 +768,82 @@ private:
 		status_t error = B_OK;
 
 		for (;;) {
-			BMessage message;
-			MessageId messageId;
-			bool isReply;
-			error = _ReadMessage(message, messageId, isReply);
+			Message* message = new(std::nothrow) Message;
+			if (message == NULL) {
+				error = B_NO_MEMORY;
+				break;
+			}
+			ObjectDeleter<Message> messageDeleter(message);
+
+			bool isReply = false;
+			error = _ReadMessage(message->envelope, message->message, isReply);
 			if (error != B_OK)
 				break;
 
-			if (isReply) {
-				PthreadMutexLocker locker(fLock);
-				error = fReceivedReplies.Put(messageId, message);
-				if (error != B_OK)
-					break;
-			} else {
-				Message* queueMessage
-					= new(std::nothrow) Message(messageId, message);
-				if (queueMessage == NULL) {
-					error = B_NO_MEMORY;
-					break;
-				}
-
-				PthreadMutexLocker locker(fLock);
-				if (!fReceivedMessages.AddItem(queueMessage)) {
-					delete queueMessage;
-					error = B_NO_MEMORY;
-					break;
-				}
-			}
-
 			PthreadMutexLocker locker(fLock);
-			pthread_cond_broadcast(&fMessageReceivedCondition);
+
+			if (isReply)
+				_AddReply(messageDeleter.Detach());
+			else
+				_AddReceivedMessage(messageDeleter.Detach());
 		}
 
 		// if we exit our message loop, ensure everybody wakes up and knows
 		// we're no longer receiving messages.
-		PthreadMutexLocker locker(fLock);
-		fTerminating = true;
-		pthread_cond_broadcast(&fMessageReceivedCondition);
+		_Close();
 		return error;
+	}
+
+	// fLock must be held
+	void _AddReply(Message* message)
+	{
+		MessageId messageId = message->envelope.messageId;
+
+		ReplyWaiter* waiter = fReplyWaiters.Lookup(messageId);
+		if (waiter == NULL) {
+			// The waiter probably already timeout out.
+			delete message;
+			return;
+		}
+
+		waiter->SetMessage(message);
+		fReplyWaiters.Remove(waiter);
+		waiter->Notify();
+	}
+
+	// fLock must be held
+	void _AddReceivedMessage(Message* message)
+	{
+		// find the channel
+		Channel* channel = fChannels.Lookup(message->envelope.channelId);
+		if (channel == NULL) {
+			// unknown channel
+			delete message;
+			return;
+		}
+
+		if (channel->AppendMessage(message))
+			fReceivedMessages.AppendMessage(message);
+	}
+
+	// fLock must be held
+	void _RemoveReceivedMessageFromChannel(Message* message)
+	{
+		if (Channel* channel = fChannels.Lookup(message->envelope.channelId))
+			channel->RemoveMessage(message);
 	}
 
 private:
 	pthread_mutex_t		fLock;
-	pthread_cond_t		fMessageReceivedCondition;
 	bool				fTerminating;
 	Stream*				fStream;
+	Channel*			fDefaultChannel;
 	thread_id			fReplyReader;
-	ReplyMessageMap		fReceivedReplies;
+	ReplyWaiterHashTable fReplyWaiters;
+	ChannelHashTable	fChannels;
 	MessageQueue		fReceivedMessages;
-	int64				fReplyIDCounter;
+	int64				fChannelIdCounter;
+	int64				fReplyIdCounter;
 };
 
 
@@ -406,10 +903,7 @@ StreamMessenger::Close()
 status_t
 StreamMessenger::SendMessage(const BMessage& message, MessageId& _messageId)
 {
-	if (fImpl == NULL)
-		return B_NO_INIT;
-
-	return fImpl->SendMessage(message, _messageId);
+	return ChannelMessenger::SendMessage(message, _messageId);
 }
 
 
@@ -417,29 +911,94 @@ status_t
 StreamMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 	bigtime_t timeout)
 {
-	if (fImpl == NULL)
-		return B_NO_INIT;
-
-	return fImpl->SendMessage(message, _reply, timeout);
+	return ChannelMessenger::SendMessage(message, _reply, timeout);
 }
 
 
 status_t
 StreamMessenger::SendReply(MessageId messageId, const BMessage& reply)
 {
-	if (fImpl == NULL)
-		return B_NO_INIT;
-
-	return fImpl->SendReply(messageId, reply);
+	return ChannelMessenger::SendReply(messageId, reply);
 }
 
 
 status_t
-StreamMessenger::ReceiveMessage(BMessage& _message, MessageId& _messageId,
+StreamMessenger::ReceiveMessage(MessageId& _messageId, BMessage& _message,
+	bigtime_t timeout)
+{
+	return ChannelMessenger::ReceiveMessage(_messageId, _message,  timeout);
+}
+
+
+status_t
+StreamMessenger::NewChannel(ChannelId& _id)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->NewChannel(_id);
+}
+
+
+status_t
+StreamMessenger::DeleteChannel(ChannelId channelId)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->DeleteChannel(channelId);
+}
+
+
+status_t
+StreamMessenger::SendMessage(ChannelId channelId, const BMessage& message,
+	MessageId& _messageId)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->SendMessage(channelId, message, _messageId);
+}
+
+
+status_t
+StreamMessenger::SendMessage(ChannelId channelId, const BMessage& message,
+	BMessage& _reply, bigtime_t timeout)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->SendMessage(channelId, message, _reply, timeout);
+}
+
+
+status_t
+StreamMessenger::SendReply(const Envelope& envelope, const BMessage& reply)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->SendReply(envelope, reply);
+}
+
+
+status_t
+StreamMessenger::ReceiveMessage(ChannelId channelId, MessageId& _messageId,
+	BMessage& _message, bigtime_t timeout)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->ReceiveMessage(channelId, _messageId, _message, timeout);
+}
+
+
+status_t
+StreamMessenger::ReceiveMessage(Envelope& _envelope, BMessage& _message,
 	bigtime_t timeout)
 {
 	if (fImpl == NULL)
 		return B_NO_INIT;
 
-	return fImpl->ReceiveMessage(_message, _messageId, timeout);
+	return fImpl->ReceiveMessage(_envelope, _message, timeout);
 }

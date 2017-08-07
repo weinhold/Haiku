@@ -35,7 +35,7 @@ public:
 									const BMessage& reply) = 0;
 
 								// wait for unsolicited message on socket
-	virtual	status_t			ReceiveMessage(BMessage& _message,
-									MessageId& _messageId,
+	virtual	status_t			ReceiveMessage(MessageId& _messageId,
+									BMessage& _message,
 									bigtime_t timeout = B_INFINITE_TIMEOUT) = 0;
 };
