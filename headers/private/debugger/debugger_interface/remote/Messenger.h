@@ -6,12 +6,13 @@
 
 
 #include <OS.h>
+#include <Referenceable.h>
 
 
 class BMessage;
 
 
-struct Messenger {
+struct Messenger : BReferenceable {
 public:
 	typedef	uint64				MessageId;
 

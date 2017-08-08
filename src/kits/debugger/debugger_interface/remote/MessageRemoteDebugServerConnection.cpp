@@ -20,6 +20,7 @@ MessageRemoteDebugServerConnection::MessageRemoteDebugServerConnection(
 	fMessenger(messenger)
 {
 	fArchitecture->AcquireReference();
+	fMessenger->AcquireReference();
 }
 
 
@@ -27,6 +28,7 @@ MessageRemoteDebugServerConnection::~MessageRemoteDebugServerConnection()
 {
 	Close();
 
+	fMessenger->ReleaseReference();
 	fArchitecture->ReleaseReference();
 }
 

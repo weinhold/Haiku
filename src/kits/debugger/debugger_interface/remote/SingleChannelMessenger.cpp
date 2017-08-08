@@ -13,10 +13,12 @@ SingleChannelMessenger::SingleChannelMessenger(ChannelMessenger* parent,
 	fParent(parent),
 	fChannelId(channelId)
 {
+	fParent->AcquireReference();
 }
 
 SingleChannelMessenger::~SingleChannelMessenger()
 {
+	fParent->ReleaseReference();
 }
 
 
