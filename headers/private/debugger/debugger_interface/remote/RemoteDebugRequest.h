@@ -2,8 +2,7 @@
  * Copyright 2017, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Distributed under the terms of the MIT License.
  */
-#ifndef REMOTE_DEBUG_REQUEST_H
-#define REMOTE_DEBUG_REQUEST_H
+#pragma once
 
 
 #include <SupportDefs.h>
@@ -97,6 +96,3 @@ struct RemoteDebugRequest {
 template<typename Request>
 struct RemoteResponse {
 };
-
-
-#endif	// REMOTE_DEBUG_REQUEST_H
