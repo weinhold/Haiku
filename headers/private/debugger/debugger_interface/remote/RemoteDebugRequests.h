@@ -2,9 +2,7 @@
  * Copyright 2017, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Distributed under the terms of the MIT License.
  */
-#ifndef REMOTE_DEBUG_REQUESTS_H
-#define REMOTE_DEBUG_REQUESTS_H
-
+#pragma once
 
 
 #include <ObjectList.h>
@@ -292,5 +290,6 @@ DEFINE_REQUEST_STRUCTS(
 // 									= 0;
 
 
-#endif	// REMOTE_DEBUG_REQUESTS_H
-
+#undef DEFINE_REQUEST_STRUCTS
+#undef DEFINE_REQUEST_STRUCT
+#undef DEFINE_REPLY_STRUCT
