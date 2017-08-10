@@ -44,7 +44,7 @@ struct StructInspector<RemoteDebugRequest>
 	virtual						~StructInspector();
 };
 
-typedef StructInspector<RemoteDebugRequest> RequestInspector;
+typedef StructInspector<RemoteDebugRequest> DebugRequestInspector;
 
 
 template<>
@@ -68,7 +68,7 @@ struct ConstStructInspector<RemoteDebugRequest>
 	virtual						~ConstStructInspector();
 };
 
-typedef ConstStructInspector<RemoteDebugRequest> ConstRequestInspector;
+typedef ConstStructInspector<RemoteDebugRequest> ConstDebugRequestInspector;
 
 
 struct RemoteDebugRequest {
@@ -77,9 +77,10 @@ struct RemoteDebugRequest {
 	virtual	const char*			StructName() const = 0;
 
 	virtual	void				AcceptStructInspector(
-									RequestInspector& inspector) = 0;
+									DebugRequestInspector& inspector) = 0;
 	virtual	void				AcceptStructInspector(
-									ConstRequestInspector& inspector) const = 0;
+									ConstDebugRequestInspector& inspector)
+									const = 0;
 };
 
 

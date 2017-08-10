@@ -7,12 +7,12 @@
 #include "debugger_interface/remote/RemoteDebugRequest.h"
 
 
-RequestInspector::~RequestInspector()
+DebugRequestInspector::~DebugRequestInspector()
 {
 }
 
 
-ConstRequestInspector::~ConstRequestInspector()
+ConstDebugRequestInspector::~ConstDebugRequestInspector()
 {
 }
 

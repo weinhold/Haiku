@@ -513,7 +513,7 @@ struct ArchivingRemoteDebugRequestMemberInspector
 
 struct ArchivingRemoteDebugRequestInspector
 	:
-	ConstRequestInspector,
+	ConstDebugRequestInspector,
 	ArchivingRemoteDebugRequestMemberInspector<bool>,
 	ArchivingRemoteDebugRequestMemberInspector<int32>,
 	ArchivingRemoteDebugRequestMemberInspector<uint32>,
@@ -573,7 +573,7 @@ struct UnarchivingRemoteDebugRequestMemberInspector
 
 struct UnarchivingRemoteDebugRequestInspector
 	:
-	RequestInspector,
+	DebugRequestInspector,
 	UnarchivingRemoteDebugRequestMemberInspector<bool>,
 	UnarchivingRemoteDebugRequestMemberInspector<int32>,
 	UnarchivingRemoteDebugRequestMemberInspector<uint32>,
