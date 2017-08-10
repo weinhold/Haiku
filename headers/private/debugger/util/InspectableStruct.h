@@ -56,7 +56,7 @@
 #define DEFINE_INSPECTABLE_STRUCT_INSPECTOR_METHOD_CALLS(...)	\
 	ITERATE2(INSPECTOR_METHOD_CALL, DEFINE_EMPTY, __VA_ARGS__)
 
-#define INSPECTOR_METHOD_CALL(x, y) inspector.Inspect(#y, this->y);
+#define INSPECTOR_METHOD_CALL(x, y) inspector.DoInspect(#y, this->y);
 
 #define DEFINE_CONST_INSPECTABLE_STRUCT_INSPECTOR_METHOD(baseType, ...)		\
 	virtual void AcceptStructInspector(										\

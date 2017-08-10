@@ -492,7 +492,42 @@ unarchiveData(Context& context, const BMessage& archive, const char* name,
 }
 
 
-struct ArchivingRemoteDebugRequestInspector : ConstRequestInspector {
+template<typename Context, typename Value>
+struct ArchivingStructMemberInspector : virtual StructMemberInspector<Value> {
+	virtual void Inspect(const char* name, Value& value)
+	{
+		Context* context = static_cast<Context*>(this);
+		archiveData(*context, context->GetArchive(), name, value);
+	}
+};
+
+
+struct ArchivingRemoteDebugRequestInspector;
+
+template<typename Value>
+struct ArchivingRemoteDebugRequestMemberInspector
+	: ArchivingStructMemberInspector<ArchivingRemoteDebugRequestInspector,
+		const Value> {
+};
+
+
+struct ArchivingRemoteDebugRequestInspector
+	:
+	ConstRequestInspector,
+	ArchivingRemoteDebugRequestMemberInspector<bool>,
+	ArchivingRemoteDebugRequestMemberInspector<int32>,
+	ArchivingRemoteDebugRequestMemberInspector<uint32>,
+	ArchivingRemoteDebugRequestMemberInspector<uint64>,
+	ArchivingRemoteDebugRequestMemberInspector<BString>,
+	ArchivingRemoteDebugRequestMemberInspector<RawData>,
+	ArchivingRemoteDebugRequestMemberInspector<TeamInfo>,
+	ArchivingRemoteDebugRequestMemberInspector<ThreadInfo>,
+	ArchivingRemoteDebugRequestMemberInspector<SymbolInfo>,
+	ArchivingRemoteDebugRequestMemberInspector<BObjectList<ThreadInfo> >,
+	ArchivingRemoteDebugRequestMemberInspector<BObjectList<ImageInfo> >,
+	ArchivingRemoteDebugRequestMemberInspector<BObjectList<SymbolInfo> >,
+	ArchivingRemoteDebugRequestMemberInspector<Reference<CpuState> >
+{
 	ArchivingRemoteDebugRequestInspector(const Architecture* architecture,
 		BMessage& archive)
 		:
@@ -506,69 +541,9 @@ struct ArchivingRemoteDebugRequestInspector : ConstRequestInspector {
 		return fArchitecture;
 	}
 
-	virtual void Inspect(const char* name, bool value)
+	BMessage& GetArchive()
 	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, int32 value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, uint32 value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, uint64 value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const BString& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const RawData& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const TeamInfo& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const ThreadInfo& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const SymbolInfo& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const BObjectList<ThreadInfo>& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const BObjectList<ImageInfo>& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const BObjectList<SymbolInfo>& value)
-	{
-		archiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, const Reference<CpuState>& value)
-	{
-		archiveData(*this, fArchive, name, value);
+		return fArchive;
 	}
 
 private:
@@ -577,7 +552,42 @@ private:
 };
 
 
-struct UnarchivingRemoteDebugRequestInspector : RequestInspector {
+template<typename Context, typename Value>
+struct UnarchivingStructMemberInspector : virtual StructMemberInspector<Value> {
+	virtual void Inspect(const char* name, Value& value)
+	{
+		Context* context = static_cast<Context*>(this);
+		unarchiveData(*context, context->GetArchive(), name, value);
+	}
+};
+
+
+struct UnarchivingRemoteDebugRequestInspector;
+
+template<typename Value>
+struct UnarchivingRemoteDebugRequestMemberInspector
+	: UnarchivingStructMemberInspector<UnarchivingRemoteDebugRequestInspector,
+		Value> {
+};
+
+
+struct UnarchivingRemoteDebugRequestInspector
+	:
+	RequestInspector,
+	UnarchivingRemoteDebugRequestMemberInspector<bool>,
+	UnarchivingRemoteDebugRequestMemberInspector<int32>,
+	UnarchivingRemoteDebugRequestMemberInspector<uint32>,
+	UnarchivingRemoteDebugRequestMemberInspector<uint64>,
+	UnarchivingRemoteDebugRequestMemberInspector<BString>,
+	UnarchivingRemoteDebugRequestMemberInspector<RawData>,
+	UnarchivingRemoteDebugRequestMemberInspector<TeamInfo>,
+	UnarchivingRemoteDebugRequestMemberInspector<ThreadInfo>,
+	UnarchivingRemoteDebugRequestMemberInspector<SymbolInfo>,
+	UnarchivingRemoteDebugRequestMemberInspector<BObjectList<ThreadInfo> >,
+	UnarchivingRemoteDebugRequestMemberInspector<BObjectList<ImageInfo> >,
+	UnarchivingRemoteDebugRequestMemberInspector<BObjectList<SymbolInfo> >,
+	UnarchivingRemoteDebugRequestMemberInspector<Reference<CpuState> >
+{
 	UnarchivingRemoteDebugRequestInspector(const Architecture* architecture,
 		const BMessage& archive)
 		:
@@ -591,69 +601,9 @@ struct UnarchivingRemoteDebugRequestInspector : RequestInspector {
 		return fArchitecture;
 	}
 
-	virtual void Inspect(const char* name, bool& value)
+	const BMessage& GetArchive()
 	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, int32& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, uint32& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, uint64& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, BString& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, TeamInfo& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, RawData& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, ThreadInfo& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, SymbolInfo& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, BObjectList<ThreadInfo>& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, BObjectList<ImageInfo>& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, BObjectList<SymbolInfo>& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
-	}
-
-	virtual void Inspect(const char* name, Reference<CpuState>& value)
-	{
-		unarchiveData(*this, fArchive, name, value);
+		return fArchive;
 	}
 
 private:

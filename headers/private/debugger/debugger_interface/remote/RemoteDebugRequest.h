@@ -24,59 +24,50 @@ template<typename Value> struct Reference;
 
 
 template<>
-struct StructInspector<RemoteDebugRequest> {
+struct StructInspector<RemoteDebugRequest>
+	:
+	StructInspectorBase<RemoteDebugRequest>,
+	virtual StructMemberInspector<bool>,
+	virtual StructMemberInspector<int32>,
+	virtual StructMemberInspector<uint32>,
+	virtual StructMemberInspector<uint64>,
+	virtual StructMemberInspector<BString>,
+	virtual StructMemberInspector<RawData>,
+	virtual StructMemberInspector<TeamInfo>,
+	virtual StructMemberInspector<ThreadInfo>,
+	virtual StructMemberInspector<SymbolInfo>,
+	virtual StructMemberInspector<BObjectList<ThreadInfo> >,
+	virtual StructMemberInspector<BObjectList<ImageInfo> >,
+	virtual StructMemberInspector<BObjectList<SymbolInfo> >,
+	virtual StructMemberInspector<Reference<CpuState> >
+{
 	virtual						~StructInspector();
-
-	virtual	void				Inspect(const char* name, bool& value) = 0;
-	virtual	void				Inspect(const char* name, int32& value) = 0;
-	virtual	void				Inspect(const char* name, uint32& value) = 0;
-	virtual	void				Inspect(const char* name, uint64& value) = 0;
-	virtual	void				Inspect(const char* name, BString& value) = 0;
-	virtual	void				Inspect(const char* name, RawData& value) = 0;
-	virtual	void				Inspect(const char* name, TeamInfo& value) = 0;
-	virtual	void				Inspect(const char* name,
-									ThreadInfo& value) = 0;
-	virtual	void				Inspect(const char* name,
-									SymbolInfo& value) = 0;
-	virtual	void				Inspect(const char* name,
-									BObjectList<ThreadInfo>& value) = 0;
-	virtual	void				Inspect(const char* name,
-									BObjectList<ImageInfo>& value) = 0;
-	virtual	void				Inspect(const char* name,
-									BObjectList<SymbolInfo>& value) = 0;
-	virtual	void				Inspect(const char* name,
-									Reference<CpuState>& value) = 0;
 };
+
 typedef StructInspector<RemoteDebugRequest> RequestInspector;
 
 
 template<>
-struct ConstStructInspector<RemoteDebugRequest> {
+struct ConstStructInspector<RemoteDebugRequest>
+	:
+	ConstStructInspectorBase<RemoteDebugRequest>,
+	virtual StructMemberInspector<const bool>,
+	virtual StructMemberInspector<const int32>,
+	virtual StructMemberInspector<const uint32>,
+	virtual StructMemberInspector<const uint64>,
+	virtual StructMemberInspector<const BString>,
+	virtual StructMemberInspector<const RawData>,
+	virtual StructMemberInspector<const TeamInfo>,
+	virtual StructMemberInspector<const ThreadInfo>,
+	virtual StructMemberInspector<const SymbolInfo>,
+	virtual StructMemberInspector<const BObjectList<ThreadInfo> >,
+	virtual StructMemberInspector<const BObjectList<ImageInfo> >,
+	virtual StructMemberInspector<const BObjectList<SymbolInfo> >,
+	virtual StructMemberInspector<const Reference<CpuState> >
+{
 	virtual						~ConstStructInspector();
-
-	virtual	void				Inspect(const char* name, bool value) = 0;
-	virtual	void				Inspect(const char* name, int32 value) = 0;
-	virtual	void				Inspect(const char* name, uint32 value) = 0;
-	virtual	void				Inspect(const char* name, uint64 value) = 0;
-	virtual	void				Inspect(const char* name,
-									const BString& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const RawData& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const ThreadInfo& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const TeamInfo& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const SymbolInfo& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const BObjectList<ThreadInfo>& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const BObjectList<ImageInfo>& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const BObjectList<SymbolInfo>& value) = 0;
-	virtual	void				Inspect(const char* name,
-									const Reference<CpuState>& value) = 0;
 };
+
 typedef ConstStructInspector<RemoteDebugRequest> ConstRequestInspector;
 
 
