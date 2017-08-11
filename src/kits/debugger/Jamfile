@@ -155,12 +155,11 @@ local sources =
 	# debugger_interface/remote
 	ChannelMessenger.cpp
 	FdStream.cpp
-	MessageRemoteDebugClientConnection.cpp
-	MessageRemoteDebugServerConnection.cpp
+	MessageRemoteClientConnection.cpp
+	MessageRemoteServerConnection.cpp
 	Messenger.cpp
+	RemoteDebugFactoryContext.cpp
 	RemoteDebuggerInterface.cpp
-	RemoteDebugClientConnection.cpp
-	RemoteDebugServerConnection.cpp
 	RemoteDebugRequest.cpp
 	RemoteProtocol.cpp
 	SingleChannelMessenger.cpp

@@ -12,7 +12,7 @@
 
 #include "ArchitectureX86.h"
 #include "ArchitectureX8664.h"
-#include "debugger_interface/remote/RemoteDebugClientConnection.h"
+#include "debugger_interface/remote/RemoteClientConnection.h"
 #include "debugger_interface/remote/RemoteDebugRequests.h"
 #include "debugger_interface/remote/RemoteProtocol.h"
 
@@ -131,7 +131,7 @@ RemoteDebuggerInterface::GetArchitecture() const
 status_t
 RemoteDebuggerInterface::GetNextDebugEvent(DebugEvent*& _event)
 {
-	return fConnection->GetNextDebugEvent(_event);
+	return fConnection->GetNextEvent(_event);
 }
 
 

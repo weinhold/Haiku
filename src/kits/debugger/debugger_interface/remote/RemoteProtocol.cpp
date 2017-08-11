@@ -17,14 +17,14 @@
 #include "Architecture.h"
 #include "DebugEvent.h"
 #include "Register.h"
+#include "debugger_interface/remote/RemoteDebugFactoryContext.h"
 #include "debugger_interface/remote/RemoteDebugRequests.h"
 
 
 namespace {
 
 
-static const char* const kRequestNameFieldName = "request name";
-static const char* const kEventNameFieldName = "event name";
+static const char* const kDataTypeNameFieldName = "data type name";
 
 
 template<typename Enum, const Enum kMinValue, const Enum kMaxValue>
@@ -64,34 +64,35 @@ private:
 };
 
 
-struct RemoteDebugRequestFactory {
-	RemoteDebugRequestFactory()
+template<typename RemoteData>
+struct RemoteDataFactory {
+};
+
+
+template<typename RemoteData, bool kHasResponse>
+struct RemoteDataFactoryBase;
+
+template<typename RemoteData, typename RequestType, bool kHasResponse>
+struct RegisterResponse {
+	void operator()(RemoteDataFactoryBase<RemoteData, kHasResponse>* self) {}
+};
+
+template<typename RemoteData, typename RequestType>
+struct RegisterResponse<RemoteData, RequestType, true> {
+	void operator()(RemoteDataFactoryBase<RemoteData, true>* self) {
+		typedef typename RemoteResponse<RequestType>::Type ResponseType;
+		self->template RegisterInfo<ResponseType>();
+	}
+};
+
+
+template<typename RemoteData, bool kHasResponse>
+struct RemoteDataFactoryBase {
+	RemoteDataFactoryBase()
 	{
-		registerInfos<CloseRequest>();
-		registerInfos<SetTeamDebuggingFlagsRequest>();
-		registerInfos<ContinueThreadRequest>();
-		registerInfos<StopThreadRequest>();
-		registerInfos<SingleStepThreadRequest>();
-		registerInfos<InstallBreakpointRequest>();
-		registerInfos<UninstallBreakpointRequest>();
-		registerInfos<InstallWatchpointRequest>();
-		registerInfos<UninstallWatchpointRequest>();
-		registerInfos<GetTeamInfoRequest>();
-		registerInfos<GetThreadInfosRequest>();
-		registerInfos<GetImageInfosRequest>();
-		registerInfos<GetSymbolInfosRequest>();
-		registerInfos<GetSymbolInfoRequest>();
-		registerInfos<GetThreadInfoRequest>();
-		registerInfos<GetCpuStateRequest>();
-		registerInfos<SetCpuStateRequest>();
-		registerInfos<GetCpuFeaturesRequest>();
-		registerInfos<WriteCoreFileRequest>();
-		registerInfos<GetMemoryPropertiesRequest>();
-		registerInfos<ReadMemoryRequest>();
-		registerInfos<WriteMemoryRequest>();
 	}
 
-	~RemoteDebugRequestFactory()
+	~RemoteDataFactoryBase()
 	{
 		for (typename TypeInfoMap::const_iterator it = fTypeInfos.begin();
 				it != fTypeInfos.end(); ++it) {
@@ -99,13 +100,13 @@ struct RemoteDebugRequestFactory {
 		}
 	}
 
-	status_t CreateRequest(const char* name, RemoteDebugRequest*& _request)
+	status_t CreateRequest(const char* name, RemoteData*& _request)
 	{
 		typename TypeInfoMap::const_iterator it = fTypeInfos.find(name);
 		if (it == fTypeInfos.end())
 			return B_NAME_NOT_FOUND;
 
-		RemoteDebugRequest* request = it->second->CreateInstance();
+		RemoteData* request = it->second->CreateInstance();
 		if (request == NULL)
 			return B_NO_MEMORY;
 
@@ -119,37 +120,67 @@ private:
 		{
 		}
 
-		virtual RemoteDebugRequest* CreateInstance() = 0;
+		virtual RemoteData* CreateInstance() = 0;
 	};
 
 	typedef std::map<std::string, TypeInfoBase*> TypeInfoMap;
 
 	template<typename RequestType>
 	struct TypeInfo : TypeInfoBase {
-		virtual RemoteDebugRequest* CreateInstance() {
+		virtual RemoteData* CreateInstance() {
 			return new(std::nothrow) RequestType;
 		}
 	};
 
-private:
+protected:
 	template<typename RequestType>
-	void registerInfo()
+	void RegisterInfos()
+	{
+		RegisterInfo<RequestType>();
+		RegisterResponse<RemoteData, RequestType, kHasResponse>()(this);
+	}
+
+public: // conceptually private
+	template<typename RequestType>
+	void RegisterInfo()
 	{
 		fTypeInfos[RequestType::StaticStructName()]
 			= new TypeInfo<RequestType>();
 	}
 
-	template<typename RequestType>
-	void registerInfos()
-	{
-		typedef typename RemoteResponse<RequestType>::Type ResponseType;
-
-		registerInfo<RequestType>();
-		registerInfo<ResponseType>();
-	}
-
 private:
 	TypeInfoMap	fTypeInfos;
+};
+
+
+template<>
+struct RemoteDataFactory<RemoteDebugRequest>
+		: RemoteDataFactoryBase<RemoteDebugRequest, true> {
+	RemoteDataFactory()
+	{
+		RegisterInfos<CloseRequest>();
+		RegisterInfos<SetTeamDebuggingFlagsRequest>();
+		RegisterInfos<ContinueThreadRequest>();
+		RegisterInfos<StopThreadRequest>();
+		RegisterInfos<SingleStepThreadRequest>();
+		RegisterInfos<InstallBreakpointRequest>();
+		RegisterInfos<UninstallBreakpointRequest>();
+		RegisterInfos<InstallWatchpointRequest>();
+		RegisterInfos<UninstallWatchpointRequest>();
+		RegisterInfos<GetTeamInfoRequest>();
+		RegisterInfos<GetThreadInfosRequest>();
+		RegisterInfos<GetImageInfosRequest>();
+		RegisterInfos<GetSymbolInfosRequest>();
+		RegisterInfos<GetSymbolInfoRequest>();
+		RegisterInfos<GetThreadInfoRequest>();
+		RegisterInfos<GetCpuStateRequest>();
+		RegisterInfos<SetCpuStateRequest>();
+		RegisterInfos<GetCpuFeaturesRequest>();
+		RegisterInfos<WriteCoreFileRequest>();
+		RegisterInfos<GetMemoryPropertiesRequest>();
+		RegisterInfos<ReadMemoryRequest>();
+		RegisterInfos<WriteMemoryRequest>();
+	}
 };
 
 
@@ -492,13 +523,39 @@ unarchiveData(Context& context, const BMessage& archive, const char* name,
 }
 
 
-template<typename Context, typename Value>
+template<typename DerivedType, typename Context, typename Value>
 struct ArchivingStructMemberInspector : virtual StructMemberInspector<Value> {
 	virtual void Inspect(const char* name, Value& value)
 	{
-		Context* context = static_cast<Context*>(this);
-		archiveData(*context, context->GetArchive(), name, value);
+		DerivedType* self = static_cast<DerivedType*>(this);
+		archiveData(self->GetContext(), self->GetArchive(), name, value);
 	}
+};
+
+
+template<typename RemoteData, typename Context>
+struct ArchivingRemoteDataInspector : ConstDebugRequestInspector {
+	ArchivingRemoteDataInspector(const Context& context,
+		BMessage& archive)
+		:
+		fContext(context),
+		fArchive(archive)
+	{
+	}
+
+	const Context& GetContext() const
+	{
+		return fContext;
+	}
+
+	BMessage& GetArchive() const
+	{
+		return fArchive;
+	}
+
+private:
+	const Context&	fContext;
+	BMessage&		fArchive;
 };
 
 
@@ -507,13 +564,14 @@ struct ArchivingRemoteDebugRequestInspector;
 template<typename Value>
 struct ArchivingRemoteDebugRequestMemberInspector
 	: ArchivingStructMemberInspector<ArchivingRemoteDebugRequestInspector,
-		const Value> {
+		RemoteDebugFactoryContext, const Value> {
 };
 
 
 struct ArchivingRemoteDebugRequestInspector
 	:
-	ConstDebugRequestInspector,
+	ArchivingRemoteDataInspector<RemoteDebugRequest,
+		RemoteDebugFactoryContext>,
 	ArchivingRemoteDebugRequestMemberInspector<bool>,
 	ArchivingRemoteDebugRequestMemberInspector<int32>,
 	ArchivingRemoteDebugRequestMemberInspector<uint32>,
@@ -528,37 +586,49 @@ struct ArchivingRemoteDebugRequestInspector
 	ArchivingRemoteDebugRequestMemberInspector<BObjectList<SymbolInfo> >,
 	ArchivingRemoteDebugRequestMemberInspector<Reference<CpuState> >
 {
-	ArchivingRemoteDebugRequestInspector(const Architecture* architecture,
+	ArchivingRemoteDebugRequestInspector(
+		const RemoteDebugFactoryContext& context,
 		BMessage& archive)
 		:
-		fArchitecture(architecture),
+		ArchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+template<typename DerivedType, typename Context, typename Value>
+struct UnarchivingStructMemberInspector : virtual StructMemberInspector<Value> {
+	virtual void Inspect(const char* name, Value& value)
+	{
+		DerivedType* self = static_cast<DerivedType*>(this);
+		unarchiveData(self->GetContext(), self->GetArchive(), name, value);
+	}
+};
+
+
+template<typename RemoteData, typename Context>
+struct UnarchivingRemoteDataInspector : DebugRequestInspector {
+	UnarchivingRemoteDataInspector(const Context& context,
+		const BMessage& archive)
+		:
+		fContext(context),
 		fArchive(archive)
 	{
 	}
 
-	const Architecture* GetArchitecture() const
+	const Context& GetContext() const
 	{
-		return fArchitecture;
+		return fContext;
 	}
 
-	BMessage& GetArchive()
+	const BMessage& GetArchive() const
 	{
 		return fArchive;
 	}
 
 private:
-	const Architecture*	fArchitecture;
-	BMessage&			fArchive;
-};
-
-
-template<typename Context, typename Value>
-struct UnarchivingStructMemberInspector : virtual StructMemberInspector<Value> {
-	virtual void Inspect(const char* name, Value& value)
-	{
-		Context* context = static_cast<Context*>(this);
-		unarchiveData(*context, context->GetArchive(), name, value);
-	}
+	const Context&	fContext;
+	const BMessage&	fArchive;
 };
 
 
@@ -567,13 +637,14 @@ struct UnarchivingRemoteDebugRequestInspector;
 template<typename Value>
 struct UnarchivingRemoteDebugRequestMemberInspector
 	: UnarchivingStructMemberInspector<UnarchivingRemoteDebugRequestInspector,
-		Value> {
+		RemoteDebugFactoryContext, Value> {
 };
 
 
 struct UnarchivingRemoteDebugRequestInspector
 	:
-	DebugRequestInspector,
+	UnarchivingRemoteDataInspector<RemoteDebugRequest,
+		RemoteDebugFactoryContext>,
 	UnarchivingRemoteDebugRequestMemberInspector<bool>,
 	UnarchivingRemoteDebugRequestMemberInspector<int32>,
 	UnarchivingRemoteDebugRequestMemberInspector<uint32>,
@@ -588,27 +659,13 @@ struct UnarchivingRemoteDebugRequestInspector
 	UnarchivingRemoteDebugRequestMemberInspector<BObjectList<SymbolInfo> >,
 	UnarchivingRemoteDebugRequestMemberInspector<Reference<CpuState> >
 {
-	UnarchivingRemoteDebugRequestInspector(const Architecture* architecture,
+	UnarchivingRemoteDebugRequestInspector(
+		const RemoteDebugFactoryContext& context,
 		const BMessage& archive)
 		:
-		fArchitecture(architecture),
-		fArchive(archive)
+		UnarchivingRemoteDataInspector(context, archive)
 	{
 	}
-
-	const Architecture* GetArchitecture() const
-	{
-		return fArchitecture;
-	}
-
-	const BMessage& GetArchive()
-	{
-		return fArchive;
-	}
-
-private:
-	const Architecture*	fArchitecture;
-	const BMessage&		fArchive;
 };
 
 
@@ -821,22 +878,22 @@ DEFINE_DEBUG_EVENT_ARCHIVING_HANDLER(
 struct DebugEventArchivingManager {
 	DebugEventArchivingManager()
 	{
-		registerInfo<ThreadDebuggedEvent>();
-		registerInfo<DebuggerCallEvent>();
-		registerInfo<BreakpointHitEvent>();
-		registerInfo<WatchpointHitEvent>();
-		registerInfo<SingleStepEvent>();
-		registerInfo<ExceptionOccurredEvent>();
-		registerInfo<TeamDeletedEvent>();
-		registerInfo<TeamExecEvent>();
-		registerInfo<ThreadCreatedEvent>();
-		registerInfo<ThreadRenamedEvent>();
-		registerInfo<ThreadPriorityChangedEvent>();
-		registerInfo<ThreadDeletedEvent>();
-		registerInfo<ImageCreatedEvent>();
-		registerInfo<ImageDeletedEvent>();
+		_RegisterInfo<ThreadDebuggedEvent>();
+		_RegisterInfo<DebuggerCallEvent>();
+		_RegisterInfo<BreakpointHitEvent>();
+		_RegisterInfo<WatchpointHitEvent>();
+		_RegisterInfo<SingleStepEvent>();
+		_RegisterInfo<ExceptionOccurredEvent>();
+		_RegisterInfo<TeamDeletedEvent>();
+		_RegisterInfo<TeamExecEvent>();
+		_RegisterInfo<ThreadCreatedEvent>();
+		_RegisterInfo<ThreadRenamedEvent>();
+		_RegisterInfo<ThreadPriorityChangedEvent>();
+		_RegisterInfo<ThreadDeletedEvent>();
+		_RegisterInfo<ImageCreatedEvent>();
+		_RegisterInfo<ImageDeletedEvent>();
 // TODO:
-// 		registerInfo<SignalReceivedEvent>();
+// 		_RegisterInfo<SignalReceivedEvent>();
 	}
 
 	~DebugEventArchivingManager()
@@ -863,7 +920,7 @@ struct DebugEventArchivingManager {
 
 		DebugEventArchivingHandler* handler = it->second;
 
-		status_t error = archive.AddString(kEventNameFieldName,
+		status_t error = archive.AddString(kDataTypeNameFieldName,
 			handler->EventName());
 		if (error != B_OK)
 			throw error;
@@ -876,7 +933,7 @@ struct DebugEventArchivingManager {
 		const BMessage& archive) const
 	{
 		const char* eventName;
-		status_t error = archive.FindString(kEventNameFieldName, &eventName);
+		status_t error = archive.FindString(kDataTypeNameFieldName, &eventName);
 		if (error != B_OK)
 			throw(error);
 
@@ -893,7 +950,7 @@ private:
 
 private:
 	template<typename Event>
-	void registerInfo()
+	void _RegisterInfo()
 	{
 		typedef DebugEventArchivingHandlerBase<Event> Handler;
 		Handler* handler = new Handler();
@@ -907,89 +964,146 @@ private:
 };
 
 
-} // anonymous namespace
+template<typename RemoteData>
+struct Types {
+};
 
 
-status_t
-archiveRemoteDebugRequest(const Architecture* architecture,
-	const RemoteDebugRequest& request, BMessage& archive)
-{
-	try {
-		status_t error = archive.AddString(kRequestNameFieldName,
-			request.StructName());
+template<>
+struct Types<RemoteDebugRequest> {
+	typedef ArchivingRemoteDebugRequestInspector ArchivingInspector;
+	typedef UnarchivingRemoteDebugRequestInspector UnarchivingInspector;
+};
+
+
+template<typename RemoteData, typename Context>
+struct Archiver {
+	static status_t Archive(const Context& context,
+		const RemoteData& data, BMessage& archive)
+	{
+		try {
+			status_t error = archive.AddString(kDataTypeNameFieldName,
+				data.StructName());
+			if (error != B_OK)
+				return error;
+
+			typename Types<RemoteData>::ArchivingInspector inspector(
+				context, archive);
+			data.AcceptStructInspector(inspector);
+			return B_OK;
+		} catch (status_t error) {
+			return error;
+		}
+	}
+
+
+	static status_t Unarchive(const Context& context,
+		const BMessage& archive, RemoteData*& _data)
+	{
+		// TODO: should follow the usual patterns instead
+		static RemoteDataFactory<RemoteData> dataFactory;
+
+		const char* dataName;
+		status_t error = archive.FindString(kDataTypeNameFieldName, &dataName);
 		if (error != B_OK)
 			return error;
 
-		ArchivingRemoteDebugRequestInspector inspector(architecture, archive);
-		request.AcceptStructInspector(inspector);
+		RemoteData* data;
+		error = dataFactory.CreateRequest(dataName, data);
+		if (error != B_OK)
+			return error;
+		ObjectDeleter<RemoteData> dataDeleter;
+
+		try {
+			typename Types<RemoteData>::UnarchivingInspector inspector(
+				context, archive);
+			data->AcceptStructInspector(inspector);
+		} catch (status_t unarchivingError) {
+			return unarchivingError;
+		} catch (std::bad_alloc&) {
+			return B_NO_MEMORY;
+		}
+
+		_data = dataDeleter.Detach();
 		return B_OK;
-	} catch (status_t error) {
-		return error;
 	}
-}
+};
 
 
-status_t
-unarchiveRemoteDebugRequest(const Architecture* architecture,
-	const BMessage& archive, RemoteDebugRequest*& _request)
-{
-	// TODO: should follow the usual patterns instead
-	static RemoteDebugRequestFactory requestFactory;
-
-	const char* requestName;
-	status_t error = archive.FindString(kRequestNameFieldName, &requestName);
-	if (error != B_OK)
-		return error;
-
-	RemoteDebugRequest* request;
-	error = requestFactory.CreateRequest(requestName, request);
-	if (error != B_OK)
-		return error;
-	ObjectDeleter<RemoteDebugRequest> requestDeleter;
-
-	try {
-		UnarchivingRemoteDebugRequestInspector inspector(architecture, archive);
-		request->AcceptStructInspector(inspector);
-	} catch (status_t unarchivingError) {
-		return unarchivingError;
-	} catch (std::bad_alloc&) {
-		return B_NO_MEMORY;
+template<>
+struct Archiver<DebugEvent, RemoteDebugFactoryContext> {
+	static status_t Archive(const RemoteDebugFactoryContext& context,
+		const DebugEvent& event, BMessage& archive)
+	{
+		try {
+			DebugEventArchivingManager::Default().ArchiveEvent(
+				context.GetArchitecture(), archive, event);
+			return B_OK;
+		} catch (status_t archivingError) {
+			return archivingError;
+		} catch (std::bad_alloc&) {
+			return B_NO_MEMORY;
+		}
 	}
 
-	_request = requestDeleter.Detach();
-	return B_OK;
-}
+
+	static status_t Unarchive(const RemoteDebugFactoryContext& context,
+		const BMessage& archive, DebugEvent*& _event)
+	{
+		DebugEvent* event;
+		try {
+			event = DebugEventArchivingManager::Default().UnarchiveEvent(
+				context.GetArchitecture(), archive);
+		} catch (status_t unarchivingError) {
+			return unarchivingError;
+		} catch (std::bad_alloc&) {
+			return B_NO_MEMORY;
+		}
+
+		_event = event;
+		return B_OK;
+	}
+};
 
 
+} // anonymous namespace
+
+
+template<typename RemoteData, typename Context>
 status_t
-archiveDebugEvent(const Architecture* architecture, const DebugEvent& event,
+archiveRemoteData(const Context& context, const RemoteData& data,
 	BMessage& archive)
 {
-	try {
-		DebugEventArchivingManager::Default().ArchiveEvent(architecture,
-			archive, event);
-		return B_OK;
-	} catch (status_t archivingError) {
-		return archivingError;
-	} catch (std::bad_alloc&) {
-		return B_NO_MEMORY;
-	}
+	return Archiver<RemoteData, Context>::Archive(context, data, archive);
 }
 
 
-status_t unarchiveDebugEvent(const Architecture* architecture,
-	const BMessage& archive, DebugEvent*& _event)
+template<typename RemoteData, typename Context>
+status_t
+unarchiveRemoteData(const Context& context, const BMessage& archive,
+	RemoteData*& _data)
 {
-	DebugEvent* event;
-	try {
-		event = DebugEventArchivingManager::Default().UnarchiveEvent(
-			architecture, archive);
-	} catch (status_t unarchivingError) {
-		return unarchivingError;
-	} catch (std::bad_alloc&) {
-		return B_NO_MEMORY;
-	}
-
-	_event = event;
-	return B_OK;
+	return Archiver<RemoteData, Context>::Unarchive(context, archive, _data);
 }
+
+
+// explicit template instantiations
+
+// RemoteDebugRequest
+template status_t archiveRemoteData<RemoteDebugRequest,
+		RemoteDebugFactoryContext>(
+	const RemoteDebugFactoryContext& context, const RemoteDebugRequest& data,
+	BMessage& archive);
+template status_t unarchiveRemoteData<RemoteDebugRequest,
+		RemoteDebugFactoryContext>(
+	const RemoteDebugFactoryContext& context, const BMessage& archive,
+	RemoteDebugRequest*& _data);
+
+// DebugEvent
+template status_t archiveRemoteData<DebugEvent, RemoteDebugFactoryContext>(
+	const RemoteDebugFactoryContext& context, const DebugEvent& data,
+	BMessage& archive);
+template status_t unarchiveRemoteData<DebugEvent, RemoteDebugFactoryContext>(
+	const RemoteDebugFactoryContext& context, const BMessage& archive,
+	DebugEvent*& _data);
+

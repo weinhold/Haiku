@@ -14,20 +14,21 @@ struct DebugEvent;
 struct RemoteDebugRequest;
 
 
-struct RemoteDebugServerConnection : public BReferenceable {
+template<typename Request, typename Event>
+struct RemoteServerConnection : public BReferenceable {
 public:
 	typedef	uint64				RequestId;
 
 public:
-								RemoteDebugServerConnection();
-	virtual						~RemoteDebugServerConnection();
+								RemoteServerConnection()	{}
+	virtual						~RemoteServerConnection()	{}
 
 	virtual	status_t			Close() = 0;
 
-	virtual	status_t			ReceiveRequest(RemoteDebugRequest*& _request,
+	virtual	status_t			ReceiveRequest(Request*& _request,
 									RequestId& _requestId) = 0;
 	virtual	status_t			SendResponse(RequestId requestId,
-									const RemoteDebugRequest& response) = 0;
+									const Request& response) = 0;
 
-	virtual	status_t			SendDebugEvent(const DebugEvent& event) = 0;
+	virtual	status_t			SendEvent(const Event& event) = 0;
 };

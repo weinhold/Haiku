@@ -9,7 +9,10 @@
 #include "DebuggerInterface.h"
 
 
-class RemoteDebugClientConnection;
+struct RemoteDebugRequest;
+template<typename Request, typename Event> struct RemoteClientConnection;
+typedef RemoteClientConnection<RemoteDebugRequest, DebugEvent>
+	RemoteDebugClientConnection;
 
 
 class RemoteDebuggerInterface : public DebuggerInterface {

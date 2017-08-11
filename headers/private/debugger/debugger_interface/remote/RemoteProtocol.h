@@ -14,12 +14,10 @@ class Architecture;
 class DebugEvent;
 
 
-status_t archiveRemoteDebugRequest(const Architecture* architecture,
-			const RemoteDebugRequest& request, BMessage& archive);
-status_t unarchiveRemoteDebugRequest(const Architecture* architecture,
-			const BMessage& archive, RemoteDebugRequest*& _request);
+template<typename RemoteData, typename Context>
+status_t archiveRemoteData(const Context& context, const RemoteData& data,
+			BMessage& archive);
 
-status_t archiveDebugEvent(const Architecture* architecture,
-			const DebugEvent& event, BMessage& archive);
-status_t unarchiveDebugEvent(const Architecture* architecture,
-			const BMessage& archive, DebugEvent*& _event);
+template<typename RemoteData, typename Context>
+status_t unarchiveRemoteData(const Context& context, const BMessage& archive,
+			RemoteData*& _data);
