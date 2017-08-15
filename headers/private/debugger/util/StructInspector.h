@@ -2,8 +2,7 @@
  * Copyright 2017, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Distributed under the terms of the MIT License.
  */
-#ifndef UTIL_STRUCT_INSPECTOR_H
-#define UTIL_STRUCT_INSPECTOR_H
+#pragma once
 
 
 template<typename Struct>
@@ -49,6 +48,3 @@ struct ConstStructInspectorBase {
 			->Inspect(name, value);
 	}
 };
-
-
-#endif	// UTIL_STRUCT_INSPECTOR_H

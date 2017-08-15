@@ -2,8 +2,7 @@
  * Copyright 2017, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Distributed under the terms of the MIT License.
  */
-#ifndef UTIL_INSPECTABLE_STRUCT_H
-#define UTIL_INSPECTABLE_STRUCT_H
+#pragma once
 
 
 #include "MacroMagic.h"
@@ -64,6 +63,3 @@
 	{																		\
 		DEFINE_INSPECTABLE_STRUCT_INSPECTOR_METHOD_CALLS(__VA_ARGS__)		\
 	}
-
-
-#endif	// UTIL_INSPECTABLE_STRUCT_H
