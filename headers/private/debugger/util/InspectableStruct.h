@@ -63,3 +63,21 @@
 	{																		\
 		DEFINE_INSPECTABLE_STRUCT_INSPECTOR_METHOD_CALLS(__VA_ARGS__)		\
 	}
+
+
+template<typename StructType>
+struct InspectableStruct {
+	typedef StructInspector<StructType> Inspector;
+	typedef ConstStructInspector<StructType>
+		ConstInspector;
+
+public:
+								InspectableStruct() {}
+	virtual						~InspectableStruct() {}
+
+	virtual	const char*			StructName() const = 0;
+
+	virtual	void				AcceptStructInspector(Inspector& inspector) = 0;
+	virtual	void				AcceptStructInspector(
+									ConstInspector& inspector) const = 0;
+};
