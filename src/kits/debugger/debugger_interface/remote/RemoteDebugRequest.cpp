@@ -15,8 +15,3 @@ DebugRequestInspector::~DebugRequestInspector()
 ConstDebugRequestInspector::~ConstDebugRequestInspector()
 {
 }
-
-
-RemoteDebugRequest::~RemoteDebugRequest()
-{
-}

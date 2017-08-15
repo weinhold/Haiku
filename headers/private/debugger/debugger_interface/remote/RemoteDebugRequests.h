@@ -20,6 +20,7 @@
 #include "ThreadInfo.h"
 
 #include "debugger_interface/remote/RemoteDebugRequest.h"
+#include "debugger_interface/remote/RemoteResponse.h"
 
 
 #define DEFINE_REQUEST_STRUCTS(name, requestFields, responseFields)	\

@@ -7,6 +7,7 @@
 
 #include <SupportDefs.h>
 
+#include "util/InspectableStruct.h"
 #include "util/StructInspector.h"
 
 
@@ -21,6 +22,9 @@ class SymbolInfo;
 class TeamInfo;
 class ThreadInfo;
 template<typename Value> struct Reference;
+
+
+struct RemoteDebugRequest : InspectableStruct<RemoteDebugRequest> {};
 
 
 template<>
@@ -69,22 +73,3 @@ struct ConstStructInspector<RemoteDebugRequest>
 };
 
 typedef ConstStructInspector<RemoteDebugRequest> ConstDebugRequestInspector;
-
-
-struct RemoteDebugRequest {
-	virtual						~RemoteDebugRequest();
-
-	virtual	const char*			StructName() const = 0;
-
-	virtual	void				AcceptStructInspector(
-									DebugRequestInspector& inspector) = 0;
-	virtual	void				AcceptStructInspector(
-									ConstDebugRequestInspector& inspector)
-									const = 0;
-};
-
-
-// maps the request type to its corresponding response type
-template<typename Request>
-struct RemoteResponse {
-};
