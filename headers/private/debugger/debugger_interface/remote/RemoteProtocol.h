@@ -5,13 +5,10 @@
 #pragma once
 
 
-#include "debugger_interface/remote/RemoteDebugRequest.h"
+#include <SupportDefs.h>
 
 
 class BMessage;
-
-class Architecture;
-class DebugEvent;
 
 
 template<typename RemoteData, typename Context>

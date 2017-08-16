@@ -84,7 +84,16 @@ MessageRemoteClientConnection<Request, Event, Context>::GetNextEvent(
 // explicit template instantiations
 
 #include "debugger_interface/remote/RemoteDebugFactoryContext.h"
+#include "debugger_interface/remote/RemoteManagementFactoryContext.h"
+
+
+struct DebugEvent;
+struct RemoteDebugRequest;
+struct RemoteManagementEvent;
+struct RemoteManagementRequest;
 
 
 template struct MessageRemoteClientConnection<RemoteDebugRequest, DebugEvent,
 	RemoteDebugFactoryContext>;
+template struct MessageRemoteClientConnection<RemoteManagementRequest,
+	RemoteManagementEvent, RemoteManagementFactoryContext>;

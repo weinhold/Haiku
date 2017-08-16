@@ -109,7 +109,16 @@ MessageRemoteServerConnection<Request, Event, Context>::SendEvent(
 // explicit template instantiations
 
 #include "debugger_interface/remote/RemoteDebugFactoryContext.h"
+#include "debugger_interface/remote/RemoteManagementFactoryContext.h"
+
+
+struct DebugEvent;
+struct RemoteDebugRequest;
+struct RemoteManagementEvent;
+struct RemoteManagementRequest;
 
 
 template struct MessageRemoteServerConnection<RemoteDebugRequest, DebugEvent,
 	RemoteDebugFactoryContext>;
+template struct MessageRemoteServerConnection<RemoteManagementRequest,
+	RemoteManagementEvent, RemoteManagementFactoryContext>;

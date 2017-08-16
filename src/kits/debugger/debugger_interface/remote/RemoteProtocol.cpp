@@ -19,6 +19,9 @@
 #include "Register.h"
 #include "debugger_interface/remote/RemoteDebugFactoryContext.h"
 #include "debugger_interface/remote/RemoteDebugRequests.h"
+#include "debugger_interface/remote/RemoteManagementFactoryContext.h"
+#include "debugger_interface/remote/RemoteManagementEvents.h"
+#include "debugger_interface/remote/RemoteManagementRequests.h"
 
 
 namespace {
@@ -150,37 +153,6 @@ public: // conceptually private
 
 private:
 	TypeInfoMap	fTypeInfos;
-};
-
-
-template<>
-struct RemoteDataFactory<RemoteDebugRequest>
-		: RemoteDataFactoryBase<RemoteDebugRequest, true> {
-	RemoteDataFactory()
-	{
-		RegisterInfos<CloseRequest>();
-		RegisterInfos<SetTeamDebuggingFlagsRequest>();
-		RegisterInfos<ContinueThreadRequest>();
-		RegisterInfos<StopThreadRequest>();
-		RegisterInfos<SingleStepThreadRequest>();
-		RegisterInfos<InstallBreakpointRequest>();
-		RegisterInfos<UninstallBreakpointRequest>();
-		RegisterInfos<InstallWatchpointRequest>();
-		RegisterInfos<UninstallWatchpointRequest>();
-		RegisterInfos<GetTeamInfoRequest>();
-		RegisterInfos<GetThreadInfosRequest>();
-		RegisterInfos<GetImageInfosRequest>();
-		RegisterInfos<GetSymbolInfosRequest>();
-		RegisterInfos<GetSymbolInfoRequest>();
-		RegisterInfos<GetThreadInfoRequest>();
-		RegisterInfos<GetCpuStateRequest>();
-		RegisterInfos<SetCpuStateRequest>();
-		RegisterInfos<GetCpuFeaturesRequest>();
-		RegisterInfos<WriteCoreFileRequest>();
-		RegisterInfos<GetMemoryPropertiesRequest>();
-		RegisterInfos<ReadMemoryRequest>();
-		RegisterInfos<WriteMemoryRequest>();
-	}
 };
 
 
@@ -534,7 +506,7 @@ struct ArchivingStructMemberInspector : virtual StructMemberInspector<Value> {
 
 
 template<typename RemoteData, typename Context>
-struct ArchivingRemoteDataInspector : ConstDebugRequestInspector {
+struct ArchivingRemoteDataInspector : ConstStructInspector<RemoteData> {
 	ArchivingRemoteDataInspector(const Context& context,
 		BMessage& archive)
 		:
@@ -557,6 +529,45 @@ private:
 	const Context&	fContext;
 	BMessage&		fArchive;
 };
+
+
+template<typename DerivedType, typename Context, typename Value>
+struct UnarchivingStructMemberInspector : virtual StructMemberInspector<Value> {
+	virtual void Inspect(const char* name, Value& value)
+	{
+		DerivedType* self = static_cast<DerivedType*>(this);
+		unarchiveData(self->GetContext(), self->GetArchive(), name, value);
+	}
+};
+
+
+template<typename RemoteData, typename Context>
+struct UnarchivingRemoteDataInspector : StructInspector<RemoteData> {
+	UnarchivingRemoteDataInspector(const Context& context,
+		const BMessage& archive)
+		:
+		fContext(context),
+		fArchive(archive)
+	{
+	}
+
+	const Context& GetContext() const
+	{
+		return fContext;
+	}
+
+	const BMessage& GetArchive() const
+	{
+		return fArchive;
+	}
+
+private:
+	const Context&	fContext;
+	const BMessage&	fArchive;
+};
+
+
+// #pragma mark - RemoteDebugRequest archiving support
 
 
 struct ArchivingRemoteDebugRequestInspector;
@@ -596,42 +607,6 @@ struct ArchivingRemoteDebugRequestInspector
 };
 
 
-template<typename DerivedType, typename Context, typename Value>
-struct UnarchivingStructMemberInspector : virtual StructMemberInspector<Value> {
-	virtual void Inspect(const char* name, Value& value)
-	{
-		DerivedType* self = static_cast<DerivedType*>(this);
-		unarchiveData(self->GetContext(), self->GetArchive(), name, value);
-	}
-};
-
-
-template<typename RemoteData, typename Context>
-struct UnarchivingRemoteDataInspector : DebugRequestInspector {
-	UnarchivingRemoteDataInspector(const Context& context,
-		const BMessage& archive)
-		:
-		fContext(context),
-		fArchive(archive)
-	{
-	}
-
-	const Context& GetContext() const
-	{
-		return fContext;
-	}
-
-	const BMessage& GetArchive() const
-	{
-		return fArchive;
-	}
-
-private:
-	const Context&	fContext;
-	const BMessage&	fArchive;
-};
-
-
 struct UnarchivingRemoteDebugRequestInspector;
 
 template<typename Value>
@@ -667,6 +642,170 @@ struct UnarchivingRemoteDebugRequestInspector
 	{
 	}
 };
+
+
+template<>
+struct RemoteDataFactory<RemoteDebugRequest>
+		: RemoteDataFactoryBase<RemoteDebugRequest, true> {
+	RemoteDataFactory()
+	{
+		RegisterInfos<CloseRequest>();
+		RegisterInfos<SetTeamDebuggingFlagsRequest>();
+		RegisterInfos<ContinueThreadRequest>();
+		RegisterInfos<StopThreadRequest>();
+		RegisterInfos<SingleStepThreadRequest>();
+		RegisterInfos<InstallBreakpointRequest>();
+		RegisterInfos<UninstallBreakpointRequest>();
+		RegisterInfos<InstallWatchpointRequest>();
+		RegisterInfos<UninstallWatchpointRequest>();
+		RegisterInfos<GetTeamInfoRequest>();
+		RegisterInfos<GetThreadInfosRequest>();
+		RegisterInfos<GetImageInfosRequest>();
+		RegisterInfos<GetSymbolInfosRequest>();
+		RegisterInfos<GetSymbolInfoRequest>();
+		RegisterInfos<GetThreadInfoRequest>();
+		RegisterInfos<GetCpuStateRequest>();
+		RegisterInfos<SetCpuStateRequest>();
+		RegisterInfos<GetCpuFeaturesRequest>();
+		RegisterInfos<WriteCoreFileRequest>();
+		RegisterInfos<GetMemoryPropertiesRequest>();
+		RegisterInfos<ReadMemoryRequest>();
+		RegisterInfos<WriteMemoryRequest>();
+	}
+};
+
+
+// #pragma mark - RemoteManagementRequest archiving support
+
+
+struct ArchivingRemoteManagementRequestInspector;
+
+template<typename Value>
+struct ArchivingRemoteManagementRequestMemberInspector
+	: ArchivingStructMemberInspector<ArchivingRemoteManagementRequestInspector,
+		RemoteManagementFactoryContext, const Value> {
+};
+
+
+struct ArchivingRemoteManagementRequestInspector
+	:
+	ArchivingRemoteDataInspector<RemoteManagementRequest,
+		RemoteManagementFactoryContext>,
+	ArchivingRemoteManagementRequestMemberInspector<int32>,
+	ArchivingRemoteManagementRequestMemberInspector<uint32>
+{
+	ArchivingRemoteManagementRequestInspector(
+		const RemoteManagementFactoryContext& context,
+		BMessage& archive)
+		:
+		ArchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+struct UnarchivingRemoteManagementRequestInspector;
+
+template<typename Value>
+struct UnarchivingRemoteManagementRequestMemberInspector
+	: UnarchivingStructMemberInspector<
+		UnarchivingRemoteManagementRequestInspector,
+		RemoteManagementFactoryContext, Value> {
+};
+
+
+struct UnarchivingRemoteManagementRequestInspector
+	:
+	UnarchivingRemoteDataInspector<RemoteManagementRequest,
+		RemoteManagementFactoryContext>,
+	UnarchivingRemoteManagementRequestMemberInspector<int32>,
+	UnarchivingRemoteManagementRequestMemberInspector<uint32>
+{
+	UnarchivingRemoteManagementRequestInspector(
+		const RemoteManagementFactoryContext& context,
+		const BMessage& archive)
+		:
+		UnarchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+template<>
+struct RemoteDataFactory<RemoteManagementRequest>
+		: RemoteDataFactoryBase<RemoteManagementRequest, true> {
+	RemoteDataFactory()
+	{
+		RegisterInfos<HelloRequest>();
+	}
+};
+
+
+// #pragma mark - RemoteManagementEvent archiving support
+
+
+struct ArchivingRemoteManagementEventInspector;
+
+template<typename Value>
+struct ArchivingRemoteManagementEventMemberInspector
+	: ArchivingStructMemberInspector<ArchivingRemoteManagementEventInspector,
+		RemoteManagementFactoryContext, const Value> {
+};
+
+
+struct ArchivingRemoteManagementEventInspector
+	:
+	ArchivingRemoteDataInspector<RemoteManagementEvent,
+		RemoteManagementFactoryContext>,
+	ArchivingRemoteManagementEventMemberInspector<bool>
+{
+	ArchivingRemoteManagementEventInspector(
+		const RemoteManagementFactoryContext& context,
+		BMessage& archive)
+		:
+		ArchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+struct UnarchivingRemoteManagementEventInspector;
+
+template<typename Value>
+struct UnarchivingRemoteManagementEventMemberInspector
+	: UnarchivingStructMemberInspector<
+		UnarchivingRemoteManagementEventInspector,
+		RemoteManagementFactoryContext, Value> {
+};
+
+
+struct UnarchivingRemoteManagementEventInspector
+	:
+	UnarchivingRemoteDataInspector<RemoteManagementEvent,
+		RemoteManagementFactoryContext>,
+	UnarchivingRemoteManagementEventMemberInspector<bool>
+{
+	UnarchivingRemoteManagementEventInspector(
+		const RemoteManagementFactoryContext& context,
+		const BMessage& archive)
+		:
+		UnarchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+template<>
+struct RemoteDataFactory<RemoteManagementEvent>
+		: RemoteDataFactoryBase<RemoteManagementEvent, true> {
+	RemoteDataFactory()
+	{
+// 		RegisterInfos<HelloRequest>();
+	}
+};
+
+
+// #pragma mark - DebugEvent archiving support
 
 
 struct DebugEventArchivingContext {
@@ -964,6 +1103,9 @@ private:
 };
 
 
+// #pragma mark - Archiver classes
+
+
 template<typename RemoteData>
 struct Types {
 };
@@ -973,6 +1115,20 @@ template<>
 struct Types<RemoteDebugRequest> {
 	typedef ArchivingRemoteDebugRequestInspector ArchivingInspector;
 	typedef UnarchivingRemoteDebugRequestInspector UnarchivingInspector;
+};
+
+
+template<>
+struct Types<RemoteManagementRequest> {
+	typedef ArchivingRemoteManagementRequestInspector ArchivingInspector;
+	typedef UnarchivingRemoteManagementRequestInspector UnarchivingInspector;
+};
+
+
+template<>
+struct Types<RemoteManagementEvent> {
+	typedef ArchivingRemoteManagementEventInspector ArchivingInspector;
+	typedef UnarchivingRemoteManagementEventInspector UnarchivingInspector;
 };
 
 
@@ -1099,6 +1255,17 @@ template status_t unarchiveRemoteData<RemoteDebugRequest,
 	const RemoteDebugFactoryContext& context, const BMessage& archive,
 	RemoteDebugRequest*& _data);
 
+// RemoteManagementRequest
+template status_t archiveRemoteData<RemoteManagementRequest,
+		RemoteManagementFactoryContext>(
+	const RemoteManagementFactoryContext& context,
+	const RemoteManagementRequest& data,
+	BMessage& archive);
+template status_t unarchiveRemoteData<RemoteManagementRequest,
+		RemoteManagementFactoryContext>(
+	const RemoteManagementFactoryContext& context, const BMessage& archive,
+	RemoteManagementRequest*& _data);
+
 // DebugEvent
 template status_t archiveRemoteData<DebugEvent, RemoteDebugFactoryContext>(
 	const RemoteDebugFactoryContext& context, const DebugEvent& data,
@@ -1107,3 +1274,12 @@ template status_t unarchiveRemoteData<DebugEvent, RemoteDebugFactoryContext>(
 	const RemoteDebugFactoryContext& context, const BMessage& archive,
 	DebugEvent*& _data);
 
+// RemoteManagementEvent
+template status_t archiveRemoteData<RemoteManagementEvent,
+		RemoteManagementFactoryContext>(
+	const RemoteManagementFactoryContext& context,
+	const RemoteManagementEvent& data, BMessage& archive);
+template status_t unarchiveRemoteData<RemoteManagementEvent,
+		RemoteManagementFactoryContext>(
+	const RemoteManagementFactoryContext& context, const BMessage& archive,
+	RemoteManagementEvent*& _data);

@@ -161,6 +161,8 @@ local sources =
 	RemoteDebugFactoryContext.cpp
 	RemoteDebuggerInterface.cpp
 	RemoteDebugRequest.cpp
+	RemoteManagementEvent.cpp
+	RemoteManagementRequest.cpp
 	RemoteProtocol.cpp
 	SingleChannelMessenger.cpp
 	Stream.cpp
