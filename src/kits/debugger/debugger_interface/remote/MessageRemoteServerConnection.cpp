@@ -12,8 +12,8 @@
 #include "debugger_interface/remote/RemoteProtocol.h"
 
 
-template<typename Request, typename Event, typename Context>
-MessageRemoteServerConnection<Request, Event, Context>
+template<typename Request, typename Response, typename Event, typename Context>
+MessageRemoteServerConnection<Request, Response, Event, Context>
 	::MessageRemoteServerConnection(const Context& context,
 		Messenger* messenger)
 	:
@@ -24,8 +24,8 @@ MessageRemoteServerConnection<Request, Event, Context>
 }
 
 
-template<typename Request, typename Event, typename Context>
-MessageRemoteServerConnection<Request, Event, Context>
+template<typename Request, typename Response, typename Event, typename Context>
+MessageRemoteServerConnection<Request, Response, Event, Context>
 	::~MessageRemoteServerConnection()
 {
 	Close();
@@ -34,19 +34,19 @@ MessageRemoteServerConnection<Request, Event, Context>
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteServerConnection<Request, Event, Context>::Close()
+MessageRemoteServerConnection<Request, Response, Event, Context>::Close()
 {
 	fMessenger->Close();
 	return B_OK;
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteServerConnection<Request, Event, Context>::ReceiveRequest(
-	Request*& _request, RequestId& _requestId)
+MessageRemoteServerConnection<Request, Response, Event, Context>
+	::ReceiveRequest(Request*& _request, RequestId& _requestId)
 {
 	BMessage message;
 	Messenger::MessageId messageId;
@@ -65,10 +65,10 @@ MessageRemoteServerConnection<Request, Event, Context>::ReceiveRequest(
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteServerConnection<Request, Event, Context>::SendResponse(
-	RequestId requestId, const Request& response)
+MessageRemoteServerConnection<Request, Response, Event, Context>::SendResponse(
+	RequestId requestId, const Response& response)
 {
 	BMessage message;
 	status_t error = archiveRemoteData(fContext, response, message);
@@ -85,9 +85,9 @@ MessageRemoteServerConnection<Request, Event, Context>::SendResponse(
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteServerConnection<Request, Event, Context>::SendEvent(
+MessageRemoteServerConnection<Request, Response, Event, Context>::SendEvent(
 	const Event& event)
 {
 	BMessage message;
@@ -116,9 +116,11 @@ struct DebugEvent;
 struct RemoteDebugRequest;
 struct RemoteManagementEvent;
 struct RemoteManagementRequest;
+struct RemoteManagementResponse;
 
 
-template struct MessageRemoteServerConnection<RemoteDebugRequest, DebugEvent,
-	RemoteDebugFactoryContext>;
+template struct MessageRemoteServerConnection<RemoteDebugRequest,
+	RemoteDebugRequest, DebugEvent, RemoteDebugFactoryContext>;
 template struct MessageRemoteServerConnection<RemoteManagementRequest,
-	RemoteManagementEvent, RemoteManagementFactoryContext>;
+	RemoteManagementResponse, RemoteManagementEvent,
+	RemoteManagementFactoryContext>;

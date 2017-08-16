@@ -733,10 +733,76 @@ struct UnarchivingRemoteManagementRequestInspector
 
 template<>
 struct RemoteDataFactory<RemoteManagementRequest>
-		: RemoteDataFactoryBase<RemoteManagementRequest, true> {
+		: RemoteDataFactoryBase<RemoteManagementRequest, false> {
 	RemoteDataFactory()
 	{
 		RegisterInfos<HelloRequest>();
+	}
+};
+
+
+// #pragma mark - RemoteManagementResponse archiving support
+
+
+struct ArchivingRemoteManagementResponseInspector;
+
+template<typename Value>
+struct ArchivingRemoteManagementResponseMemberInspector
+	: ArchivingStructMemberInspector<ArchivingRemoteManagementResponseInspector,
+		RemoteManagementFactoryContext, const Value> {
+};
+
+
+struct ArchivingRemoteManagementResponseInspector
+	:
+	ArchivingRemoteDataInspector<RemoteManagementResponse,
+		RemoteManagementFactoryContext>,
+	ArchivingRemoteManagementResponseMemberInspector<int32>,
+	ArchivingRemoteManagementResponseMemberInspector<uint32>
+{
+	ArchivingRemoteManagementResponseInspector(
+		const RemoteManagementFactoryContext& context,
+		BMessage& archive)
+		:
+		ArchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+struct UnarchivingRemoteManagementResponseInspector;
+
+template<typename Value>
+struct UnarchivingRemoteManagementResponseMemberInspector
+	: UnarchivingStructMemberInspector<
+		UnarchivingRemoteManagementResponseInspector,
+		RemoteManagementFactoryContext, Value> {
+};
+
+
+struct UnarchivingRemoteManagementResponseInspector
+	:
+	UnarchivingRemoteDataInspector<RemoteManagementResponse,
+		RemoteManagementFactoryContext>,
+	UnarchivingRemoteManagementResponseMemberInspector<int32>,
+	UnarchivingRemoteManagementResponseMemberInspector<uint32>
+{
+	UnarchivingRemoteManagementResponseInspector(
+		const RemoteManagementFactoryContext& context,
+		const BMessage& archive)
+		:
+		UnarchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+template<>
+struct RemoteDataFactory<RemoteManagementResponse>
+		: RemoteDataFactoryBase<RemoteManagementResponse, false> {
+	RemoteDataFactory()
+	{
+		RegisterInfos<HelloResponse>();
 	}
 };
 
@@ -1126,6 +1192,13 @@ struct Types<RemoteManagementRequest> {
 
 
 template<>
+struct Types<RemoteManagementResponse> {
+	typedef ArchivingRemoteManagementResponseInspector ArchivingInspector;
+	typedef UnarchivingRemoteManagementResponseInspector UnarchivingInspector;
+};
+
+
+template<>
 struct Types<RemoteManagementEvent> {
 	typedef ArchivingRemoteManagementEventInspector ArchivingInspector;
 	typedef UnarchivingRemoteManagementEventInspector UnarchivingInspector;
@@ -1265,6 +1338,17 @@ template status_t unarchiveRemoteData<RemoteManagementRequest,
 		RemoteManagementFactoryContext>(
 	const RemoteManagementFactoryContext& context, const BMessage& archive,
 	RemoteManagementRequest*& _data);
+
+// RemoteManagementResponse
+template status_t archiveRemoteData<RemoteManagementResponse,
+		RemoteManagementFactoryContext>(
+	const RemoteManagementFactoryContext& context,
+	const RemoteManagementResponse& data,
+	BMessage& archive);
+template status_t unarchiveRemoteData<RemoteManagementResponse,
+		RemoteManagementFactoryContext>(
+	const RemoteManagementFactoryContext& context, const BMessage& archive,
+	RemoteManagementResponse*& _data);
 
 // DebugEvent
 template status_t archiveRemoteData<DebugEvent, RemoteDebugFactoryContext>(

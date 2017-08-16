@@ -10,9 +10,10 @@
 
 
 struct RemoteDebugRequest;
-template<typename Request, typename Event> struct RemoteClientConnection;
-typedef RemoteClientConnection<RemoteDebugRequest, DebugEvent>
-	RemoteDebugClientConnection;
+template<typename Request, typename Response, typename Event>
+	struct RemoteClientConnection;
+typedef RemoteClientConnection<RemoteDebugRequest, RemoteDebugRequest,
+	DebugEvent> RemoteDebugClientConnection;
 
 
 class RemoteDebuggerInterface : public DebuggerInterface {

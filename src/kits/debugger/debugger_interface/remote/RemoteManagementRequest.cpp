@@ -15,3 +15,13 @@ ManagementRequestInspector::~ManagementRequestInspector()
 ConstManagementRequestInspector::~ConstManagementRequestInspector()
 {
 }
+
+
+ManagementResponseInspector::~ManagementResponseInspector()
+{
+}
+
+
+ConstManagementResponseInspector::~ConstManagementResponseInspector()
+{
+}

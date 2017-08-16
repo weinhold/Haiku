@@ -12,8 +12,8 @@
 #include "debugger_interface/remote/RemoteProtocol.h"
 
 
-template<typename Request, typename Event, typename Context>
-MessageRemoteClientConnection<Request, Event, Context>
+template<typename Request, typename Response, typename Event, typename Context>
+MessageRemoteClientConnection<Request, Response, Event, Context>
 	::MessageRemoteClientConnection(const Context& context,
 		Messenger* messenger)
 	:
@@ -24,8 +24,8 @@ MessageRemoteClientConnection<Request, Event, Context>
 }
 
 
-template<typename Request, typename Event, typename Context>
-MessageRemoteClientConnection<Request, Event, Context>
+template<typename Request, typename Response, typename Event, typename Context>
+MessageRemoteClientConnection<Request, Response, Event, Context>
 	::~MessageRemoteClientConnection()
 {
 	Close();
@@ -34,19 +34,19 @@ MessageRemoteClientConnection<Request, Event, Context>
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteClientConnection<Request, Event, Context>::Close()
+MessageRemoteClientConnection<Request, Response, Event, Context>::Close()
 {
 	fMessenger->Close();
 	return B_OK;
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteClientConnection<Request, Event, Context>::SendRequest(
-	const Request& request, Request*& _reply)
+MessageRemoteClientConnection<Request, Response, Event, Context>::SendRequest(
+	const Request& request, Response*& _reply)
 {
 	BMessage requestMessage;
 	status_t error = archiveRemoteData(fContext, request, requestMessage);
@@ -64,9 +64,9 @@ MessageRemoteClientConnection<Request, Event, Context>::SendRequest(
 }
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 status_t
-MessageRemoteClientConnection<Request, Event, Context>::GetNextEvent(
+MessageRemoteClientConnection<Request, Response, Event, Context>::GetNextEvent(
 	Event*& _event)
 {
 	BMessage message;
@@ -91,9 +91,11 @@ struct DebugEvent;
 struct RemoteDebugRequest;
 struct RemoteManagementEvent;
 struct RemoteManagementRequest;
+struct RemoteManagementResponse;
 
 
-template struct MessageRemoteClientConnection<RemoteDebugRequest, DebugEvent,
-	RemoteDebugFactoryContext>;
+template struct MessageRemoteClientConnection<RemoteDebugRequest,
+	RemoteDebugRequest, DebugEvent, RemoteDebugFactoryContext>;
 template struct MessageRemoteClientConnection<RemoteManagementRequest,
-	RemoteManagementEvent, RemoteManagementFactoryContext>;
+	RemoteManagementResponse, RemoteManagementEvent,
+	RemoteManagementFactoryContext>;

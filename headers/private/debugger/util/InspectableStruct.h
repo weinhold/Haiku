@@ -9,7 +9,7 @@
 #include "StructInspector.h"
 
 
-#define DEFINE_INSPECTABLE_STRUCT(structName, baseType, ...)												\
+#define DEFINE_INSPECTABLE_STRUCT(structName, baseType, additionalCode, ...) \
 	struct structName : public baseType {									\
 		structName(DEFINE_INSPECTABLE_STRUCT_CONSTRUCTOR_ARGUMENTS(			\
 				__VA_ARGS__))												\
@@ -26,6 +26,7 @@
 			{ return #structName; }											\
 		virtual const char* StructName() const								\
 			{ return StaticStructName(); }									\
+		additionalCode														\
 	};
 
 

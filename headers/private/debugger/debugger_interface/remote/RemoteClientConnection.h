@@ -10,7 +10,7 @@
 #include <Referenceable.h>
 
 
-template<typename Request, typename Event>
+template<typename Request, typename Response, typename Event>
 struct RemoteClientConnection : public BReferenceable {
 								RemoteClientConnection() {}
 	virtual						~RemoteClientConnection() {}
@@ -18,7 +18,7 @@ struct RemoteClientConnection : public BReferenceable {
 	virtual	status_t			Close() = 0;
 
 	virtual	status_t			SendRequest(const Request& request,
-									Request*& _reply) = 0;
+									Response*& _reply) = 0;
 
 	virtual	status_t			GetNextEvent(Event*& _event) = 0;
 };

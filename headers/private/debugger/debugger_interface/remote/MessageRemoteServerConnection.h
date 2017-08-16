@@ -13,11 +13,11 @@
 struct Messenger;
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 struct MessageRemoteServerConnection
-		: RemoteServerConnection<Request, Event> {
+		: RemoteServerConnection<Request, Response, Event> {
 
-	typedef typename RemoteServerConnection<Request, Event>::RequestId
+	typedef typename RemoteServerConnection<Request, Response, Event>::RequestId
 		RequestId;
 
 								MessageRemoteServerConnection(
@@ -30,7 +30,7 @@ struct MessageRemoteServerConnection
 	virtual	status_t			ReceiveRequest(Request*& _request,
 									RequestId& _requestId);
 	virtual	status_t			SendResponse(RequestId requestId,
-									const Request& response);
+									const Response& response);
 
 	virtual	status_t			SendEvent(const Event& event);
 

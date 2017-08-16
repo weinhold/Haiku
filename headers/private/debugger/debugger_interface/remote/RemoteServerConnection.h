@@ -14,7 +14,7 @@ struct DebugEvent;
 struct RemoteDebugRequest;
 
 
-template<typename Request, typename Event>
+template<typename Request, typename Response, typename Event>
 struct RemoteServerConnection : public BReferenceable {
 public:
 	typedef	uint64				RequestId;
@@ -28,7 +28,7 @@ public:
 	virtual	status_t			ReceiveRequest(Request*& _request,
 									RequestId& _requestId) = 0;
 	virtual	status_t			SendResponse(RequestId requestId,
-									const Request& response) = 0;
+									const Response& response) = 0;
 
 	virtual	status_t			SendEvent(const Event& event) = 0;
 };

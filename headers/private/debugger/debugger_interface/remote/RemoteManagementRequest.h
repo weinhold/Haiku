@@ -11,27 +11,29 @@
 #include "util/StructInspector.h"
 
 
-struct RemoteManagementRequest : InspectableStruct<RemoteManagementRequest> {};
+struct RemoteManagementRequestVisitor;
+struct RemoteManagementResponseVisitor;
+
+struct RemoteManagementRequest : InspectableStruct<RemoteManagementRequest> {
+	virtual	void				AcceptVisitor(
+									RemoteManagementRequestVisitor* visitor)
+									= 0;
+};
+
+
+struct RemoteManagementResponse : InspectableStruct<RemoteManagementResponse> {
+	virtual	void				AcceptVisitor(
+									RemoteManagementResponseVisitor* visitor)
+									= 0;
+};
 
 
 template<>
 struct StructInspector<RemoteManagementRequest>
 	:
 	StructInspectorBase<RemoteManagementRequest>,
-// 	virtual StructMemberInspector<bool>,
 	virtual StructMemberInspector<int32>,
 	virtual StructMemberInspector<uint32>
-//,
-// 	virtual StructMemberInspector<uint64>,
-// 	virtual StructMemberInspector<BString>,
-// 	virtual StructMemberInspector<RawData>,
-// 	virtual StructMemberInspector<TeamInfo>,
-// 	virtual StructMemberInspector<ThreadInfo>,
-// 	virtual StructMemberInspector<SymbolInfo>,
-// 	virtual StructMemberInspector<BObjectList<ThreadInfo> >,
-// 	virtual StructMemberInspector<BObjectList<ImageInfo> >,
-// 	virtual StructMemberInspector<BObjectList<SymbolInfo> >,
-// 	virtual StructMemberInspector<Reference<CpuState> >
 {
 	virtual						~StructInspector();
 };
@@ -43,23 +45,38 @@ template<>
 struct ConstStructInspector<RemoteManagementRequest>
 	:
 	ConstStructInspectorBase<RemoteManagementRequest>,
-// 	virtual StructMemberInspector<const bool>,
 	virtual StructMemberInspector<const int32>,
 	virtual StructMemberInspector<const uint32>
-//,
-// 	virtual StructMemberInspector<const uint64>,
-// 	virtual StructMemberInspector<const BString>,
-// 	virtual StructMemberInspector<const RawData>,
-// 	virtual StructMemberInspector<const TeamInfo>,
-// 	virtual StructMemberInspector<const ThreadInfo>,
-// 	virtual StructMemberInspector<const SymbolInfo>,
-// 	virtual StructMemberInspector<const BObjectList<ThreadInfo> >,
-// 	virtual StructMemberInspector<const BObjectList<ImageInfo> >,
-// 	virtual StructMemberInspector<const BObjectList<SymbolInfo> >,
-// 	virtual StructMemberInspector<const Reference<CpuState> >
 {
 	virtual						~ConstStructInspector();
 };
 
 typedef ConstStructInspector<RemoteManagementRequest>
 	ConstManagementRequestInspector;
+
+
+template<>
+struct StructInspector<RemoteManagementResponse>
+	:
+	StructInspectorBase<RemoteManagementResponse>,
+	virtual StructMemberInspector<int32>,
+	virtual StructMemberInspector<uint32>
+{
+	virtual						~StructInspector();
+};
+
+typedef StructInspector<RemoteManagementResponse> ManagementResponseInspector;
+
+
+template<>
+struct ConstStructInspector<RemoteManagementResponse>
+	:
+	ConstStructInspectorBase<RemoteManagementResponse>,
+	virtual StructMemberInspector<const int32>,
+	virtual StructMemberInspector<const uint32>
+{
+	virtual						~ConstStructInspector();
+};
+
+typedef ConstStructInspector<RemoteManagementResponse>
+	ConstManagementResponseInspector;

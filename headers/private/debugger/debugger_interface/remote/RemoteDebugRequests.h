@@ -37,10 +37,12 @@
 	alternatingly an attribute type and its name.
 */
 #define DEFINE_REQUEST_STRUCT(name, ...) \
-	DEFINE_INSPECTABLE_STRUCT(name ## Request, RemoteDebugRequest, __VA_ARGS__)
+	DEFINE_INSPECTABLE_STRUCT(name ## Request, RemoteDebugRequest, , \
+		__VA_ARGS__)
 
 #define DEFINE_REPLY_STRUCT(name, ...) \
-	DEFINE_INSPECTABLE_STRUCT(name ## Response, RemoteDebugRequest, __VA_ARGS__)
+	DEFINE_INSPECTABLE_STRUCT(name ## Response, RemoteDebugRequest, , \
+		__VA_ARGS__)
 
 
 DEFINE_REQUEST_STRUCTS(

@@ -13,9 +13,9 @@
 struct Messenger;
 
 
-template<typename Request, typename Event, typename Context>
+template<typename Request, typename Response, typename Event, typename Context>
 struct MessageRemoteClientConnection
-		: RemoteClientConnection<Request, Event> {
+		: RemoteClientConnection<Request, Response, Event> {
 								MessageRemoteClientConnection(
 									const Context& context,
 									Messenger* messenger);
@@ -24,7 +24,7 @@ struct MessageRemoteClientConnection
 	virtual	status_t			Close();
 
 	virtual	status_t			SendRequest(const Request& request,
-									Request*& _reply);
+									Response*& _reply);
 
 	virtual	status_t			GetNextEvent(Event*& _event);
 

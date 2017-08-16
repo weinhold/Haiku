@@ -38,11 +38,38 @@
 */
 #define DEFINE_REQUEST_STRUCT(name, ...) \
 	DEFINE_INSPECTABLE_STRUCT(name ## Request, RemoteManagementRequest, \
+		virtual void AcceptVisitor(RemoteManagementRequestVisitor* visitor) { \
+			visitor->Visit(this);	\
+		}, \
 		__VA_ARGS__)
 
 #define DEFINE_REPLY_STRUCT(name, ...) \
-	DEFINE_INSPECTABLE_STRUCT(name ## Response, RemoteManagementRequest, \
+	DEFINE_INSPECTABLE_STRUCT(name ## Response, RemoteManagementResponse, \
+		virtual void AcceptVisitor(RemoteManagementResponseVisitor* visitor) { \
+			visitor->Visit(this);	\
+		}, \
 		__VA_ARGS__)
+
+
+static const uint32 kRemoteManagementProtocolVersion = 1;
+
+
+struct HelloRequest;
+struct HelloResponse;
+
+
+struct RemoteManagementRequestVisitor {
+	virtual						~RemoteManagementRequestVisitor();
+
+	virtual	void				Visit(HelloRequest* request) = 0;
+};
+
+
+struct RemoteManagementResponseVisitor {
+	virtual						~RemoteManagementResponseVisitor();
+
+	virtual	void				Visit(HelloResponse* request) = 0;
+};
 
 
 DEFINE_REQUEST_STRUCTS(
