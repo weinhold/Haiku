@@ -134,6 +134,18 @@ private:
 	TypeInfoMap	fTypeInfos;
 };
 
+#define REGISTER_REQUEST_INFOS(...) \
+	ITERATE3(REGISTER_REQUEST_INFO, DEFINE_EMPTY, __VA_ARGS__)
+
+#define REGISTER_REQUEST_INFO(name, requestFields,	responseFields)	\
+	RegisterInfo<name ## Request>();
+
+#define REGISTER_RESPONSE_INFOS(...) \
+	ITERATE3(REGISTER_RESPONSE_INFO, DEFINE_EMPTY, __VA_ARGS__)
+
+#define REGISTER_RESPONSE_INFO(name, requestFields,	responseFields)	\
+	RegisterInfo<name ## Response>();
+
 
 #define DEFINE_VALUE_ARCHIVER(type, archiveInvocation, unarchiveInvocation)	\
 	template<typename Context>										\
@@ -628,28 +640,10 @@ struct RemoteDataFactory<RemoteDebugRequest>
 		: RemoteDataFactoryBase<RemoteDebugRequest> {
 	RemoteDataFactory()
 	{
-		RegisterInfo<CloseRequest>();
-		RegisterInfo<SetTeamDebuggingFlagsRequest>();
-		RegisterInfo<ContinueThreadRequest>();
-		RegisterInfo<StopThreadRequest>();
-		RegisterInfo<SingleStepThreadRequest>();
-		RegisterInfo<InstallBreakpointRequest>();
-		RegisterInfo<UninstallBreakpointRequest>();
-		RegisterInfo<InstallWatchpointRequest>();
-		RegisterInfo<UninstallWatchpointRequest>();
-		RegisterInfo<GetTeamInfoRequest>();
-		RegisterInfo<GetThreadInfosRequest>();
-		RegisterInfo<GetImageInfosRequest>();
-		RegisterInfo<GetSymbolInfosRequest>();
-		RegisterInfo<GetSymbolInfoRequest>();
-		RegisterInfo<GetThreadInfoRequest>();
-		RegisterInfo<GetCpuStateRequest>();
-		RegisterInfo<SetCpuStateRequest>();
-		RegisterInfo<GetCpuFeaturesRequest>();
-		RegisterInfo<WriteCoreFileRequest>();
-		RegisterInfo<GetMemoryPropertiesRequest>();
-		RegisterInfo<ReadMemoryRequest>();
-		RegisterInfo<WriteMemoryRequest>();
+		#define DEFINE_REQUEST_AND_RESPONSE_STRUCTS(...)	\
+			REGISTER_REQUEST_INFOS(__VA_ARGS__)
+		#include "debugger_interface/remote/RemoteDebugRequestDefs.h"
+		#undef DEFINE_REQUEST_AND_RESPONSE_STRUCTS
 	}
 };
 
@@ -736,28 +730,10 @@ struct RemoteDataFactory<RemoteDebugResponse>
 		: RemoteDataFactoryBase<RemoteDebugResponse> {
 	RemoteDataFactory()
 	{
-		RegisterInfo<CloseResponse>();
-		RegisterInfo<SetTeamDebuggingFlagsResponse>();
-		RegisterInfo<ContinueThreadResponse>();
-		RegisterInfo<StopThreadResponse>();
-		RegisterInfo<SingleStepThreadResponse>();
-		RegisterInfo<InstallBreakpointResponse>();
-		RegisterInfo<UninstallBreakpointResponse>();
-		RegisterInfo<InstallWatchpointResponse>();
-		RegisterInfo<UninstallWatchpointResponse>();
-		RegisterInfo<GetTeamInfoResponse>();
-		RegisterInfo<GetThreadInfosResponse>();
-		RegisterInfo<GetImageInfosResponse>();
-		RegisterInfo<GetSymbolInfosResponse>();
-		RegisterInfo<GetSymbolInfoResponse>();
-		RegisterInfo<GetThreadInfoResponse>();
-		RegisterInfo<GetCpuStateResponse>();
-		RegisterInfo<SetCpuStateResponse>();
-		RegisterInfo<GetCpuFeaturesResponse>();
-		RegisterInfo<WriteCoreFileResponse>();
-		RegisterInfo<GetMemoryPropertiesResponse>();
-		RegisterInfo<ReadMemoryResponse>();
-		RegisterInfo<WriteMemoryResponse>();
+		#define DEFINE_REQUEST_AND_RESPONSE_STRUCTS(...)	\
+			REGISTER_RESPONSE_INFOS(__VA_ARGS__)
+		#include "debugger_interface/remote/RemoteDebugRequestDefs.h"
+		#undef DEFINE_REQUEST_AND_RESPONSE_STRUCTS
 	}
 };
 
@@ -823,7 +799,10 @@ struct RemoteDataFactory<RemoteManagementRequest>
 		: RemoteDataFactoryBase<RemoteManagementRequest> {
 	RemoteDataFactory()
 	{
-		RegisterInfo<HelloRequest>();
+		#define DEFINE_REQUEST_AND_RESPONSE_STRUCTS(...)	\
+			REGISTER_REQUEST_INFOS(__VA_ARGS__)
+		#include "debugger_interface/remote/RemoteManagementRequestDefs.h"
+		#undef DEFINE_REQUEST_AND_RESPONSE_STRUCTS
 	}
 };
 
@@ -889,7 +868,10 @@ struct RemoteDataFactory<RemoteManagementResponse>
 		: RemoteDataFactoryBase<RemoteManagementResponse> {
 	RemoteDataFactory()
 	{
-		RegisterInfo<HelloResponse>();
+		#define DEFINE_REQUEST_AND_RESPONSE_STRUCTS(...)	\
+			REGISTER_RESPONSE_INFOS(__VA_ARGS__)
+		#include "debugger_interface/remote/RemoteManagementRequestDefs.h"
+		#undef DEFINE_REQUEST_AND_RESPONSE_STRUCTS
 	}
 };
 

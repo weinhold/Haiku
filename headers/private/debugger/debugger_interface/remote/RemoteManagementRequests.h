@@ -55,25 +55,8 @@
 static const uint32 kRemoteManagementProtocolVersion = 1;
 
 
-DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
-	Hello,
-	(
-		uint32,		protocolVersion
-	),
-	(
-		status_t, 	error,
-		uint32,		protocolVersion
-	),
-
-	FooBar,
-	(
-		uint32,		xxx
-	),
-	(
-		status_t, 	error,
-		uint32,		yyy
-	)
-)
+// define the structs
+#include "debugger_interface/remote/RemoteManagementRequestDefs.h"
 
 
 // defined in RemoteInspectableStructMacros.h
