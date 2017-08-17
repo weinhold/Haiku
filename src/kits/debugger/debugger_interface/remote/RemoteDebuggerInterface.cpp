@@ -28,11 +28,11 @@ sendRequest(RemoteDebugClientConnection& connection, const RequestType& request,
 	typedef typename RemoteResponse<RequestType>::Type ResponseType;
 
 	// send request with response
-	RemoteDebugRequest* response;
+	RemoteDebugResponse* response;
 	status_t error = connection.SendRequest(request, response);
 	if (error != B_OK)
 		return error;
-	ObjectDeleter<RemoteDebugRequest> responseDeleter(response);
+	ObjectDeleter<RemoteDebugResponse> responseDeleter(response);
 
 	// check response type
 	ResponseType* concreteResponse = dynamic_cast<ResponseType*>(response);

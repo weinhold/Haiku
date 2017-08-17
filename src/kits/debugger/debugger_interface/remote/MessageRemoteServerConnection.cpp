@@ -114,13 +114,14 @@ MessageRemoteServerConnection<Request, Response, Event, Context>::SendEvent(
 
 struct DebugEvent;
 struct RemoteDebugRequest;
+struct RemoteDebugResponse;
 struct RemoteManagementEvent;
 struct RemoteManagementRequest;
 struct RemoteManagementResponse;
 
 
 template struct MessageRemoteServerConnection<RemoteDebugRequest,
-	RemoteDebugRequest, DebugEvent, RemoteDebugFactoryContext>;
+	RemoteDebugResponse, DebugEvent, RemoteDebugFactoryContext>;
 template struct MessageRemoteServerConnection<RemoteManagementRequest,
 	RemoteManagementResponse, RemoteManagementEvent,
 	RemoteManagementFactoryContext>;

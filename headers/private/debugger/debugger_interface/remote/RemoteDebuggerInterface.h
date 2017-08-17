@@ -10,9 +10,10 @@
 
 
 struct RemoteDebugRequest;
+struct RemoteDebugResponse;
 template<typename Request, typename Response, typename Event>
 	struct RemoteClientConnection;
-typedef RemoteClientConnection<RemoteDebugRequest, RemoteDebugRequest,
+typedef RemoteClientConnection<RemoteDebugRequest, RemoteDebugResponse,
 	DebugEvent> RemoteDebugClientConnection;
 
 

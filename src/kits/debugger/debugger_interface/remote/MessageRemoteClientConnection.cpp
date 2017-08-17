@@ -89,13 +89,14 @@ MessageRemoteClientConnection<Request, Response, Event, Context>::GetNextEvent(
 
 struct DebugEvent;
 struct RemoteDebugRequest;
+struct RemoteDebugResponse;
 struct RemoteManagementEvent;
 struct RemoteManagementRequest;
 struct RemoteManagementResponse;
 
 
 template struct MessageRemoteClientConnection<RemoteDebugRequest,
-	RemoteDebugRequest, DebugEvent, RemoteDebugFactoryContext>;
+	RemoteDebugResponse, DebugEvent, RemoteDebugFactoryContext>;
 template struct MessageRemoteClientConnection<RemoteManagementRequest,
 	RemoteManagementResponse, RemoteManagementEvent,
 	RemoteManagementFactoryContext>;

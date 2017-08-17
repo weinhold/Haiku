@@ -72,24 +72,11 @@ struct RemoteDataFactory {
 };
 
 
-template<typename RemoteData, bool kHasResponse>
+template<typename RemoteData>
 struct RemoteDataFactoryBase;
 
-template<typename RemoteData, typename RequestType, bool kHasResponse>
-struct RegisterResponse {
-	void operator()(RemoteDataFactoryBase<RemoteData, kHasResponse>* self) {}
-};
 
-template<typename RemoteData, typename RequestType>
-struct RegisterResponse<RemoteData, RequestType, true> {
-	void operator()(RemoteDataFactoryBase<RemoteData, true>* self) {
-		typedef typename RemoteResponse<RequestType>::Type ResponseType;
-		self->template RegisterInfo<ResponseType>();
-	}
-};
-
-
-template<typename RemoteData, bool kHasResponse>
+template<typename RemoteData>
 struct RemoteDataFactoryBase {
 	RemoteDataFactoryBase()
 	{
@@ -136,14 +123,6 @@ private:
 	};
 
 protected:
-	template<typename RequestType>
-	void RegisterInfos()
-	{
-		RegisterInfo<RequestType>();
-		RegisterResponse<RemoteData, RequestType, kHasResponse>()(this);
-	}
-
-public: // conceptually private
 	template<typename RequestType>
 	void RegisterInfo()
 	{
@@ -646,31 +625,139 @@ struct UnarchivingRemoteDebugRequestInspector
 
 template<>
 struct RemoteDataFactory<RemoteDebugRequest>
-		: RemoteDataFactoryBase<RemoteDebugRequest, true> {
+		: RemoteDataFactoryBase<RemoteDebugRequest> {
 	RemoteDataFactory()
 	{
-		RegisterInfos<CloseRequest>();
-		RegisterInfos<SetTeamDebuggingFlagsRequest>();
-		RegisterInfos<ContinueThreadRequest>();
-		RegisterInfos<StopThreadRequest>();
-		RegisterInfos<SingleStepThreadRequest>();
-		RegisterInfos<InstallBreakpointRequest>();
-		RegisterInfos<UninstallBreakpointRequest>();
-		RegisterInfos<InstallWatchpointRequest>();
-		RegisterInfos<UninstallWatchpointRequest>();
-		RegisterInfos<GetTeamInfoRequest>();
-		RegisterInfos<GetThreadInfosRequest>();
-		RegisterInfos<GetImageInfosRequest>();
-		RegisterInfos<GetSymbolInfosRequest>();
-		RegisterInfos<GetSymbolInfoRequest>();
-		RegisterInfos<GetThreadInfoRequest>();
-		RegisterInfos<GetCpuStateRequest>();
-		RegisterInfos<SetCpuStateRequest>();
-		RegisterInfos<GetCpuFeaturesRequest>();
-		RegisterInfos<WriteCoreFileRequest>();
-		RegisterInfos<GetMemoryPropertiesRequest>();
-		RegisterInfos<ReadMemoryRequest>();
-		RegisterInfos<WriteMemoryRequest>();
+		RegisterInfo<CloseRequest>();
+		RegisterInfo<SetTeamDebuggingFlagsRequest>();
+		RegisterInfo<ContinueThreadRequest>();
+		RegisterInfo<StopThreadRequest>();
+		RegisterInfo<SingleStepThreadRequest>();
+		RegisterInfo<InstallBreakpointRequest>();
+		RegisterInfo<UninstallBreakpointRequest>();
+		RegisterInfo<InstallWatchpointRequest>();
+		RegisterInfo<UninstallWatchpointRequest>();
+		RegisterInfo<GetTeamInfoRequest>();
+		RegisterInfo<GetThreadInfosRequest>();
+		RegisterInfo<GetImageInfosRequest>();
+		RegisterInfo<GetSymbolInfosRequest>();
+		RegisterInfo<GetSymbolInfoRequest>();
+		RegisterInfo<GetThreadInfoRequest>();
+		RegisterInfo<GetCpuStateRequest>();
+		RegisterInfo<SetCpuStateRequest>();
+		RegisterInfo<GetCpuFeaturesRequest>();
+		RegisterInfo<WriteCoreFileRequest>();
+		RegisterInfo<GetMemoryPropertiesRequest>();
+		RegisterInfo<ReadMemoryRequest>();
+		RegisterInfo<WriteMemoryRequest>();
+	}
+};
+
+
+// #pragma mark - RemoteDebugResponse archiving support
+
+
+struct ArchivingRemoteDebugResponseInspector;
+
+template<typename Value>
+struct ArchivingRemoteDebugResponseMemberInspector
+	: ArchivingStructMemberInspector<ArchivingRemoteDebugResponseInspector,
+		RemoteDebugFactoryContext, const Value> {
+};
+
+
+struct ArchivingRemoteDebugResponseInspector
+	:
+	ArchivingRemoteDataInspector<RemoteDebugResponse,
+		RemoteDebugFactoryContext>,
+	ArchivingRemoteDebugResponseMemberInspector<bool>,
+	ArchivingRemoteDebugResponseMemberInspector<int32>,
+	ArchivingRemoteDebugResponseMemberInspector<uint32>,
+	ArchivingRemoteDebugResponseMemberInspector<uint64>,
+	ArchivingRemoteDebugResponseMemberInspector<BString>,
+	ArchivingRemoteDebugResponseMemberInspector<RawData>,
+	ArchivingRemoteDebugResponseMemberInspector<TeamInfo>,
+	ArchivingRemoteDebugResponseMemberInspector<ThreadInfo>,
+	ArchivingRemoteDebugResponseMemberInspector<SymbolInfo>,
+	ArchivingRemoteDebugResponseMemberInspector<BObjectList<ThreadInfo> >,
+	ArchivingRemoteDebugResponseMemberInspector<BObjectList<ImageInfo> >,
+	ArchivingRemoteDebugResponseMemberInspector<BObjectList<SymbolInfo> >,
+	ArchivingRemoteDebugResponseMemberInspector<Reference<CpuState> >
+{
+	ArchivingRemoteDebugResponseInspector(
+		const RemoteDebugFactoryContext& context,
+		BMessage& archive)
+		:
+		ArchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+struct UnarchivingRemoteDebugResponseInspector;
+
+template<typename Value>
+struct UnarchivingRemoteDebugResponseMemberInspector
+	: UnarchivingStructMemberInspector<UnarchivingRemoteDebugResponseInspector,
+		RemoteDebugFactoryContext, Value> {
+};
+
+
+struct UnarchivingRemoteDebugResponseInspector
+	:
+	UnarchivingRemoteDataInspector<RemoteDebugResponse,
+		RemoteDebugFactoryContext>,
+	UnarchivingRemoteDebugResponseMemberInspector<bool>,
+	UnarchivingRemoteDebugResponseMemberInspector<int32>,
+	UnarchivingRemoteDebugResponseMemberInspector<uint32>,
+	UnarchivingRemoteDebugResponseMemberInspector<uint64>,
+	UnarchivingRemoteDebugResponseMemberInspector<BString>,
+	UnarchivingRemoteDebugResponseMemberInspector<RawData>,
+	UnarchivingRemoteDebugResponseMemberInspector<TeamInfo>,
+	UnarchivingRemoteDebugResponseMemberInspector<ThreadInfo>,
+	UnarchivingRemoteDebugResponseMemberInspector<SymbolInfo>,
+	UnarchivingRemoteDebugResponseMemberInspector<BObjectList<ThreadInfo> >,
+	UnarchivingRemoteDebugResponseMemberInspector<BObjectList<ImageInfo> >,
+	UnarchivingRemoteDebugResponseMemberInspector<BObjectList<SymbolInfo> >,
+	UnarchivingRemoteDebugResponseMemberInspector<Reference<CpuState> >
+{
+	UnarchivingRemoteDebugResponseInspector(
+		const RemoteDebugFactoryContext& context,
+		const BMessage& archive)
+		:
+		UnarchivingRemoteDataInspector(context, archive)
+	{
+	}
+};
+
+
+template<>
+struct RemoteDataFactory<RemoteDebugResponse>
+		: RemoteDataFactoryBase<RemoteDebugResponse> {
+	RemoteDataFactory()
+	{
+		RegisterInfo<CloseResponse>();
+		RegisterInfo<SetTeamDebuggingFlagsResponse>();
+		RegisterInfo<ContinueThreadResponse>();
+		RegisterInfo<StopThreadResponse>();
+		RegisterInfo<SingleStepThreadResponse>();
+		RegisterInfo<InstallBreakpointResponse>();
+		RegisterInfo<UninstallBreakpointResponse>();
+		RegisterInfo<InstallWatchpointResponse>();
+		RegisterInfo<UninstallWatchpointResponse>();
+		RegisterInfo<GetTeamInfoResponse>();
+		RegisterInfo<GetThreadInfosResponse>();
+		RegisterInfo<GetImageInfosResponse>();
+		RegisterInfo<GetSymbolInfosResponse>();
+		RegisterInfo<GetSymbolInfoResponse>();
+		RegisterInfo<GetThreadInfoResponse>();
+		RegisterInfo<GetCpuStateResponse>();
+		RegisterInfo<SetCpuStateResponse>();
+		RegisterInfo<GetCpuFeaturesResponse>();
+		RegisterInfo<WriteCoreFileResponse>();
+		RegisterInfo<GetMemoryPropertiesResponse>();
+		RegisterInfo<ReadMemoryResponse>();
+		RegisterInfo<WriteMemoryResponse>();
 	}
 };
 
@@ -733,10 +820,10 @@ struct UnarchivingRemoteManagementRequestInspector
 
 template<>
 struct RemoteDataFactory<RemoteManagementRequest>
-		: RemoteDataFactoryBase<RemoteManagementRequest, false> {
+		: RemoteDataFactoryBase<RemoteManagementRequest> {
 	RemoteDataFactory()
 	{
-		RegisterInfos<HelloRequest>();
+		RegisterInfo<HelloRequest>();
 	}
 };
 
@@ -799,10 +886,10 @@ struct UnarchivingRemoteManagementResponseInspector
 
 template<>
 struct RemoteDataFactory<RemoteManagementResponse>
-		: RemoteDataFactoryBase<RemoteManagementResponse, false> {
+		: RemoteDataFactoryBase<RemoteManagementResponse> {
 	RemoteDataFactory()
 	{
-		RegisterInfos<HelloResponse>();
+		RegisterInfo<HelloResponse>();
 	}
 };
 
@@ -863,10 +950,10 @@ struct UnarchivingRemoteManagementEventInspector
 
 template<>
 struct RemoteDataFactory<RemoteManagementEvent>
-		: RemoteDataFactoryBase<RemoteManagementEvent, true> {
+		: RemoteDataFactoryBase<RemoteManagementEvent> {
 	RemoteDataFactory()
 	{
-// 		RegisterInfos<HelloRequest>();
+// 		RegisterInfo<HelloRequest>();
 	}
 };
 
@@ -1185,6 +1272,13 @@ struct Types<RemoteDebugRequest> {
 
 
 template<>
+struct Types<RemoteDebugResponse> {
+	typedef ArchivingRemoteDebugResponseInspector ArchivingInspector;
+	typedef UnarchivingRemoteDebugResponseInspector UnarchivingInspector;
+};
+
+
+template<>
 struct Types<RemoteManagementRequest> {
 	typedef ArchivingRemoteManagementRequestInspector ArchivingInspector;
 	typedef UnarchivingRemoteManagementRequestInspector UnarchivingInspector;
@@ -1327,6 +1421,16 @@ template status_t unarchiveRemoteData<RemoteDebugRequest,
 		RemoteDebugFactoryContext>(
 	const RemoteDebugFactoryContext& context, const BMessage& archive,
 	RemoteDebugRequest*& _data);
+
+// RemoteDebugResponse
+template status_t archiveRemoteData<RemoteDebugResponse,
+		RemoteDebugFactoryContext>(
+	const RemoteDebugFactoryContext& context, const RemoteDebugResponse& data,
+	BMessage& archive);
+template status_t unarchiveRemoteData<RemoteDebugResponse,
+		RemoteDebugFactoryContext>(
+	const RemoteDebugFactoryContext& context, const BMessage& archive,
+	RemoteDebugResponse*& _data);
 
 // RemoteManagementRequest
 template status_t archiveRemoteData<RemoteManagementRequest,

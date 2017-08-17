@@ -15,3 +15,13 @@ DebugRequestInspector::~DebugRequestInspector()
 ConstDebugRequestInspector::~ConstDebugRequestInspector()
 {
 }
+
+
+DebugResponseInspector::~DebugResponseInspector()
+{
+}
+
+
+ConstDebugResponseInspector::~ConstDebugResponseInspector()
+{
+}
