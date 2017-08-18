@@ -9,7 +9,7 @@
 #include <Message.h>
 
 #include "debugger_interface/remote/Messenger.h"
-#include "debugger_interface/remote/RemoteProtocol.h"
+#include "debugger_interface/remote/RemoteDataArchiving.h"
 
 
 template<typename Request, typename Response, typename Event, typename Context>

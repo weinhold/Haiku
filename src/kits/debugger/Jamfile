@@ -158,12 +158,12 @@ local sources =
 	MessageRemoteClientConnection.cpp
 	MessageRemoteServerConnection.cpp
 	Messenger.cpp
+	RemoteDataArchiving.cpp
 	RemoteDebugFactoryContext.cpp
 	RemoteDebuggerInterface.cpp
 	RemoteDebugRequest.cpp
 	RemoteManagementEvent.cpp
 	RemoteManagementRequest.cpp
-	RemoteProtocol.cpp
 	SingleChannelMessenger.cpp
 	Stream.cpp
 	StreamMessenger.cpp

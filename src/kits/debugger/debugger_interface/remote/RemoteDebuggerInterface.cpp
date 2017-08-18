@@ -14,7 +14,6 @@
 #include "ArchitectureX8664.h"
 #include "debugger_interface/remote/RemoteClientConnection.h"
 #include "debugger_interface/remote/RemoteDebugRequests.h"
-#include "debugger_interface/remote/RemoteProtocol.h"
 
 
 namespace {
