@@ -10,6 +10,7 @@ UsePrivateHeaders debugger ;
 UsePrivateHeaders [ FDirName debugger arch ] ;
 UsePrivateHeaders [ FDirName debugger controllers ] ;
 UsePrivateHeaders [ FDirName debugger debug_info ] ;
+UsePrivateHeaders [ FDirName debugger debugger_interface ] ;
 UsePrivateHeaders [ FDirName debugger debug_managers ] ;
 UsePrivateHeaders [ FDirName debugger elf ] ;
 UsePrivateHeaders [ FDirName debugger files ] ;
