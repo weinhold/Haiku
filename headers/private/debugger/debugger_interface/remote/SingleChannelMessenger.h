@@ -16,6 +16,9 @@ public:
 									ChannelId channelId);
 	virtual						~SingleChannelMessenger();
 
+	virtual	void				Unset();
+	virtual	void				Close();
+
 	virtual	status_t			SendMessage(const BMessage& message,
 									MessageId& _messageId);
 	virtual	status_t			SendMessage(const BMessage& message,
@@ -31,4 +34,5 @@ public:
 private:
 			ChannelMessenger*	fParent;
 			ChannelId			fChannelId;
+			bool				fClosed;
 };

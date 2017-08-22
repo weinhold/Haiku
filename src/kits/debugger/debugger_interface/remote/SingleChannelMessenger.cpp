@@ -11,14 +11,37 @@ SingleChannelMessenger::SingleChannelMessenger(ChannelMessenger* parent,
 		ChannelId channelId)
 	:
 	fParent(parent),
-	fChannelId(channelId)
+	fChannelId(channelId),
+	fClosed(false)
 {
 	fParent->AcquireReference();
 }
 
 SingleChannelMessenger::~SingleChannelMessenger()
 {
-	fParent->ReleaseReference();
+	Unset();
+}
+
+
+void
+SingleChannelMessenger::Unset()
+{
+	if (fParent != NULL) {
+		Close();
+
+		fParent->ReleaseReference();
+		fParent = NULL;
+	}
+}
+
+
+void
+SingleChannelMessenger::Close()
+{
+	if (!fClosed) {
+		fParent->DeleteChannel(fChannelId);
+		fClosed = true;
+	}
 }
 
 
@@ -26,6 +49,8 @@ status_t
 SingleChannelMessenger::SendMessage(const BMessage& message,
 	MessageId& _messageId)
 {
+	if (fClosed)
+		return B_CANCELED;
 	return fParent->SendMessage(fChannelId, message, _messageId);
 }
 
@@ -34,6 +59,8 @@ status_t
 SingleChannelMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 	bigtime_t timeout)
 {
+	if (fClosed)
+		return B_CANCELED;
 	return fParent->SendMessage(fChannelId, message, _reply, timeout);
 }
 
@@ -41,6 +68,8 @@ SingleChannelMessenger::SendMessage(const BMessage& message, BMessage& _reply,
 status_t
 SingleChannelMessenger::SendReply(MessageId messageId, const BMessage& reply)
 {
+	if (fClosed)
+		return B_CANCELED;
 	return fParent->SendReply(ChannelMessenger::Envelope(messageId, fChannelId),
 		reply);
 }
@@ -50,5 +79,7 @@ status_t
 SingleChannelMessenger::ReceiveMessage(MessageId& _messageId,
 	BMessage& _message, bigtime_t timeout)
 {
+	if (fClosed)
+		return B_CANCELED;
 	return fParent->ReceiveMessage(fChannelId, _messageId, _message, timeout);
 }
