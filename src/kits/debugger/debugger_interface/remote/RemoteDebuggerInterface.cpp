@@ -267,7 +267,7 @@ RemoteDebuggerInterface::GetSemaphoreInfos(BObjectList<SemaphoreInfo>& infos)
 
 
 status_t
-RemoteDebuggerInterface::GetSymbolInfos(team_id team, image_id image,
+RemoteDebuggerInterface::GetSymbolInfos(image_id image,
 	BObjectList<SymbolInfo>& _infos)
 {
 	ObjectDeleter<GetSymbolInfosResponse> response;
@@ -283,8 +283,8 @@ RemoteDebuggerInterface::GetSymbolInfos(team_id team, image_id image,
 
 
 status_t
-RemoteDebuggerInterface::GetSymbolInfo(team_id team, image_id image,
-	const char* name, int32 symbolType, SymbolInfo& _info)
+RemoteDebuggerInterface::GetSymbolInfo(image_id image, const char* name,
+	int32 symbolType, SymbolInfo& _info)
 {
 	ObjectDeleter<GetSymbolInfoResponse> response;
 	status_t error = sendRequest(*fConnection,

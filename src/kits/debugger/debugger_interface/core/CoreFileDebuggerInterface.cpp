@@ -233,7 +233,7 @@ CoreFileDebuggerInterface::GetSemaphoreInfos(BObjectList<SemaphoreInfo>& infos)
 
 
 status_t
-CoreFileDebuggerInterface::GetSymbolInfos(team_id team, image_id image,
+CoreFileDebuggerInterface::GetSymbolInfos(image_id image,
 	BObjectList<SymbolInfo>& infos)
 {
 	// get the image info
@@ -272,8 +272,8 @@ CoreFileDebuggerInterface::GetSymbolInfos(team_id team, image_id image,
 
 
 status_t
-CoreFileDebuggerInterface::GetSymbolInfo(team_id team, image_id image,
-	const char* name, int32 symbolType, SymbolInfo& info)
+CoreFileDebuggerInterface::GetSymbolInfo(image_id image, const char* name,
+	int32 symbolType, SymbolInfo& info)
 {
 	// TODO:...
 	return B_UNSUPPORTED;

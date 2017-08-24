@@ -41,8 +41,7 @@ status_t
 ImageDebugInfo::FinishInit(DebuggerInterface* interface)
 {
 	BObjectList<SymbolInfo> symbols(50, true);
-	status_t error = interface->GetSymbolInfos(fImageInfo.TeamID(),
-		fImageInfo.ImageID(), symbols);
+	status_t error = interface->GetSymbolInfos(fImageInfo.ImageID(), symbols);
 	if (error != B_OK)
 		return error;
 	symbols.SortItems(&_CompareSymbols);

@@ -538,9 +538,8 @@ TeamDebugger::Init(DebuggerInterface* interface, thread_id threadID, int argc,
 		if (stopInMain) {
 			SymbolInfo symbolInfo;
 			if (appImage != NULL && mainThreadHandler != NULL
-				&& fDebuggerInterface->GetSymbolInfo(
-					fTeam->ID(), appImage->ID(), "main", B_SYMBOL_TYPE_TEXT,
-					symbolInfo) == B_OK) {
+				&& fDebuggerInterface->GetSymbolInfo(appImage->ID(), "main",
+					B_SYMBOL_TYPE_TEXT, symbolInfo) == B_OK) {
 				mainThreadHandler->SetBreakpointAndRun(symbolInfo.Address());
 			}
 		} else {
@@ -2004,8 +2003,8 @@ TeamDebugger::_HandleImageDebugInfoChanged(image_id imageID)
 				// the new app image has been loaded, so we know where to
 				// set the main breakpoint at.
 				SymbolInfo symbolInfo;
-				if (fDebuggerInterface->GetSymbolInfo(fTeam->ID(), image->ID(),
-						"main", B_SYMBOL_TYPE_TEXT, symbolInfo) == B_OK) {
+				if (fDebuggerInterface->GetSymbolInfo(image->ID(), "main",
+						B_SYMBOL_TYPE_TEXT, symbolInfo) == B_OK) {
 					handler->SetBreakpointAndRun(symbolInfo.Address());
 				}
 			} else {

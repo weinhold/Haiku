@@ -45,11 +45,10 @@ public:
 	virtual status_t			GetAreaInfos(BObjectList<AreaInfo>& infos);
 	virtual status_t			GetSemaphoreInfos(
 									BObjectList<SemaphoreInfo>& infos);
-	virtual	status_t			GetSymbolInfos(team_id team, image_id image,
+	virtual	status_t			GetSymbolInfos(image_id image,
 									BObjectList<SymbolInfo>& infos);
-	virtual	status_t			GetSymbolInfo(team_id team, image_id image,
-									const char* name, int32 symbolType,
-									SymbolInfo& info);
+	virtual	status_t			GetSymbolInfo(image_id image, const char* name,
+									int32 symbolType, SymbolInfo& info);
 
 	virtual	status_t			GetThreadInfo(thread_id thread,
 									ThreadInfo& info);

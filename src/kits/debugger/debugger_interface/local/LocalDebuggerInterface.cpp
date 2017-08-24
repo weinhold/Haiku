@@ -651,12 +651,12 @@ LocalDebuggerInterface::GetSemaphoreInfos(BObjectList<SemaphoreInfo>& infos)
 
 
 status_t
-LocalDebuggerInterface::GetSymbolInfos(team_id team, image_id image,
+LocalDebuggerInterface::GetSymbolInfos(image_id image,
 	BObjectList<SymbolInfo>& infos)
 {
 	// create a lookup context
 	debug_symbol_lookup_context* lookupContext;
-	status_t error = debug_create_symbol_lookup_context(team, image,
+	status_t error = debug_create_symbol_lookup_context(fTeamID, image,
 		&lookupContext);
 	if (error != B_OK)
 		return error;
@@ -696,12 +696,12 @@ LocalDebuggerInterface::GetSymbolInfos(team_id team, image_id image,
 
 
 status_t
-LocalDebuggerInterface::GetSymbolInfo(team_id team, image_id image, const char* name,
+LocalDebuggerInterface::GetSymbolInfo(image_id image, const char* name,
 	int32 symbolType, SymbolInfo& info)
 {
 	// create a lookup context
 	debug_symbol_lookup_context* lookupContext;
-	status_t error = debug_create_symbol_lookup_context(team, image,
+	status_t error = debug_create_symbol_lookup_context(fTeamID, image,
 		&lookupContext);
 	if (error != B_OK)
 		return error;
