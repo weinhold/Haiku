@@ -379,8 +379,8 @@ CoreFileDebuggerInterface::ReadMemory(target_addr_t address, void* _buffer,
 
 
 ssize_t
-CoreFileDebuggerInterface::WriteMemory(target_addr_t address, void* buffer,
-	size_t size)
+CoreFileDebuggerInterface::WriteMemory(target_addr_t address,
+	const void* buffer, size_t size)
 {
 	return B_UNSUPPORTED;
 }

@@ -98,7 +98,7 @@ public:
 	virtual	ssize_t				ReadMemory(target_addr_t address, void* buffer,
 									size_t size) = 0;
 	virtual	ssize_t				WriteMemory(target_addr_t address,
-									void* buffer, size_t size) = 0;
+									const void* buffer, size_t size) = 0;
 
 protected:
 			status_t			GetElfSymbols(const char* filePath,

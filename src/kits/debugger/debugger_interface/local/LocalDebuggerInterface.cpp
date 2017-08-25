@@ -822,7 +822,7 @@ LocalDebuggerInterface::ReadMemory(target_addr_t address, void* buffer, size_t s
 
 
 ssize_t
-LocalDebuggerInterface::WriteMemory(target_addr_t address, void* buffer,
+LocalDebuggerInterface::WriteMemory(target_addr_t address, const void* buffer,
 	size_t size)
 {
 	DebugContextGetter contextGetter(fDebugContextPool);

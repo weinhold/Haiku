@@ -380,7 +380,7 @@ RemoteDebuggerInterface::ReadMemory(target_addr_t address, void* _buffer,
 
 
 ssize_t
-RemoteDebuggerInterface::WriteMemory(target_addr_t address, void* buffer,
+RemoteDebuggerInterface::WriteMemory(target_addr_t address, const void* buffer,
 	size_t size)
 {
 	ObjectDeleter<WriteMemoryResponse> response;
