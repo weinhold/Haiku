@@ -220,7 +220,7 @@ debug_read_string(debug_context *context, const void *_address, char *buffer,
 // debug_write_memory_partial
 ssize_t
 debug_write_memory_partial(debug_context *context, const void *address,
-	void *buffer, size_t size)
+	const void *buffer, size_t size)
 {
 	if (!context)
 		return B_BAD_VALUE;
@@ -252,11 +252,11 @@ debug_write_memory_partial(debug_context *context, const void *address,
 
 // debug_write_memory
 ssize_t
-debug_write_memory(debug_context *context, const void *_address, void *_buffer,
-	size_t size)
+debug_write_memory(debug_context *context, const void *_address,
+	const void *_buffer, size_t size)
 {
 	const char *address = (const char *)_address;
-	char *buffer = (char*)_buffer;
+	const char *buffer = (const char*)_buffer;
 
 	// check parameters
 	if (!context || !address || !buffer)
