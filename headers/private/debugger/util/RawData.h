@@ -12,9 +12,21 @@
 
 
 struct RawData {
+			/*!	Parameter for c'tor and SetTo() determining how to handle the
+				ownership of the data buffer passed.
+			*/
 			enum OwnershipPolicy {
+				/*!	Only refer to the buffer. Do not free in destructor. */
 				Reference,
+
+				/*!	Use same setting as the passed RawData object. Interpret as
+					Reference for method versions where a raw buffer is passed.
+				*/
 				AsOriginal,
+
+				/*!	Clone the passed buffer. May throw std::bad_alloc. The clone
+					is freed by the destructor.
+				*/
 				Clone
 			};
 public:
