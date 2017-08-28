@@ -33,7 +33,8 @@ struct StructInspector<RemoteManagementRequest>
 	:
 	StructInspectorBase<RemoteManagementRequest>,
 	virtual StructMemberInspector<int32>,
-	virtual StructMemberInspector<uint32>
+	virtual StructMemberInspector<uint32>,
+	virtual StructMemberInspector<uint64>
 {
 	virtual						~StructInspector();
 };
@@ -46,7 +47,8 @@ struct ConstStructInspector<RemoteManagementRequest>
 	:
 	ConstStructInspectorBase<RemoteManagementRequest>,
 	virtual StructMemberInspector<const int32>,
-	virtual StructMemberInspector<const uint32>
+	virtual StructMemberInspector<const uint32>,
+	virtual StructMemberInspector<const uint64>
 {
 	virtual						~ConstStructInspector();
 };
@@ -60,7 +62,8 @@ struct StructInspector<RemoteManagementResponse>
 	:
 	StructInspectorBase<RemoteManagementResponse>,
 	virtual StructMemberInspector<int32>,
-	virtual StructMemberInspector<uint32>
+	virtual StructMemberInspector<uint32>,
+	virtual StructMemberInspector<uint64>
 {
 	virtual						~StructInspector();
 };
@@ -73,7 +76,8 @@ struct ConstStructInspector<RemoteManagementResponse>
 	:
 	ConstStructInspectorBase<RemoteManagementResponse>,
 	virtual StructMemberInspector<const int32>,
-	virtual StructMemberInspector<const uint32>
+	virtual StructMemberInspector<const uint32>,
+	virtual StructMemberInspector<const uint64>
 {
 	virtual						~ConstStructInspector();
 };

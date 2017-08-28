@@ -189,7 +189,7 @@ DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
 	),
 	(
 		status_t, 		error,
-		size_t,			bytesWritten
+		uint64,			bytesWritten
 	)
 )
 

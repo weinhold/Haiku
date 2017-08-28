@@ -6,6 +6,7 @@
 
 #include "debugger_interface/remote/RemoteDebuggerInterface.h"
 
+#include <limits>
 #include <new>
 
 #include <AutoDeleter.h>
@@ -383,6 +384,8 @@ RemoteDebuggerInterface::WriteMemory(target_addr_t address, const void* buffer,
 	if (error != B_OK)
 		return error;
 
-	size_t actualSize = std::min(size, response->bytesWritten);
+	size_t actualSize = (size_t)std::min(
+		uint64(std::numeric_limits<size_t>::max()), response->bytesWritten);
+	actualSize = std::min(actualSize, size);
 	return ssize_t(actualSize);
 }

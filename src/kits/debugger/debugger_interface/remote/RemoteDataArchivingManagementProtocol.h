@@ -31,7 +31,8 @@ struct ArchivingRemoteManagementRequestInspector
 	ArchivingRemoteDataInspector<RemoteManagementRequest,
 		RemoteManagementFactoryContext>,
 	ArchivingRemoteManagementRequestMemberInspector<int32>,
-	ArchivingRemoteManagementRequestMemberInspector<uint32>
+	ArchivingRemoteManagementRequestMemberInspector<uint32>,
+	ArchivingRemoteManagementRequestMemberInspector<uint64>
 {
 	ArchivingRemoteManagementRequestInspector(
 		const RemoteManagementFactoryContext& context,
@@ -58,7 +59,8 @@ struct UnarchivingRemoteManagementRequestInspector
 	UnarchivingRemoteDataInspector<RemoteManagementRequest,
 		RemoteManagementFactoryContext>,
 	UnarchivingRemoteManagementRequestMemberInspector<int32>,
-	UnarchivingRemoteManagementRequestMemberInspector<uint32>
+	UnarchivingRemoteManagementRequestMemberInspector<uint32>,
+	UnarchivingRemoteManagementRequestMemberInspector<uint64>
 {
 	UnarchivingRemoteManagementRequestInspector(
 		const RemoteManagementFactoryContext& context,
@@ -100,7 +102,8 @@ struct ArchivingRemoteManagementResponseInspector
 	ArchivingRemoteDataInspector<RemoteManagementResponse,
 		RemoteManagementFactoryContext>,
 	ArchivingRemoteManagementResponseMemberInspector<int32>,
-	ArchivingRemoteManagementResponseMemberInspector<uint32>
+	ArchivingRemoteManagementResponseMemberInspector<uint32>,
+	ArchivingRemoteManagementResponseMemberInspector<uint64>
 {
 	ArchivingRemoteManagementResponseInspector(
 		const RemoteManagementFactoryContext& context,
@@ -127,7 +130,8 @@ struct UnarchivingRemoteManagementResponseInspector
 	UnarchivingRemoteDataInspector<RemoteManagementResponse,
 		RemoteManagementFactoryContext>,
 	UnarchivingRemoteManagementResponseMemberInspector<int32>,
-	UnarchivingRemoteManagementResponseMemberInspector<uint32>
+	UnarchivingRemoteManagementResponseMemberInspector<uint32>,
+	UnarchivingRemoteManagementResponseMemberInspector<uint64>
 {
 	UnarchivingRemoteManagementResponseInspector(
 		const RemoteManagementFactoryContext& context,

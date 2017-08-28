@@ -16,5 +16,16 @@ DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
 	(
 		status_t, 	error,
 		uint32,		protocolVersion
+	),
+
+	DebugTeam,
+	(
+		int32,		teamId,
+		int32,		threadId
+	),
+	(
+		status_t, 	error,
+		uint64,		channel
 	)
+
 )
