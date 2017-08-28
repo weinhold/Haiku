@@ -11,7 +11,7 @@
 
 #define DECLARE_VISITOR(name, type, ...)									\
 	struct name {															\
-		virtual ~name();													\
+		virtual ~name() {}													\
 		ITERATE3(DECLARE_VISIT_METHOD_ ## type, DEFINE_EMPTY, __VA_ARGS__)	\
 	};
 
