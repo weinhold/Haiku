@@ -58,8 +58,6 @@ public:
 	virtual	status_t			SetCpuState(thread_id thread,
 									const CpuState* state);
 
-	virtual	status_t			GetCpuFeatures(uint32& flags);
-
 	virtual	status_t			WriteCoreFile(const char* path);
 
 	// TeamMemory
@@ -77,6 +75,8 @@ private:
 	struct DebugContextGetter;
 
 private:
+			status_t			_CreateArchitecture();
+
 			status_t			_CreateDebugEvent(int32 messageCode,
 									const debug_debugger_message_data& message,
 									bool& _ignore, DebugEvent*& _event);

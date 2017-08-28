@@ -310,18 +310,7 @@ status_t
 LocalDebuggerInterface::Init()
 {
 	// create the architecture
-#if defined(ARCH_x86)
-	fArchitecture = new(std::nothrow) ArchitectureX86(this);
-#elif defined(ARCH_x86_64)
-	fArchitecture = new(std::nothrow) ArchitectureX8664(this);
-#else
-	return B_UNSUPPORTED;
-#endif
-
-	if (fArchitecture == NULL)
-		return B_NO_MEMORY;
-
-	status_t error = fArchitecture->Init();
+	status_t error = _CreateArchitecture();
 	if (error != B_OK)
 		return error;
 
@@ -775,13 +764,6 @@ LocalDebuggerInterface::SetCpuState(thread_id thread, const CpuState* state)
 
 
 status_t
-LocalDebuggerInterface::GetCpuFeatures(uint32& flags)
-{
-	return fArchitecture->GetCpuFeatures(flags);
-}
-
-
-status_t
 LocalDebuggerInterface::WriteCoreFile(const char* path)
 {
 	DebugContextGetter contextGetter(fDebugContextPool);
@@ -829,6 +811,47 @@ LocalDebuggerInterface::WriteMemory(target_addr_t address, const void* buffer,
 
 	return debug_write_memory(contextGetter.Context(),
 		(const void*)address, buffer, size);
+}
+
+
+status_t
+LocalDebuggerInterface::_CreateArchitecture()
+{
+	status_t error;
+
+#if defined(ARCH_x86)
+	#define IA32_FEATURE_MMX	(1 << 23)
+	#define IA32_FEATURE_SSE	(1 << 25)
+
+	// get x86 feature flags
+	cpuid_info info;
+	error = get_cpuid(&info, 1, 0);
+	if (error != B_OK)
+		return error;
+
+	uint32 featureFlags = 0;
+	if ((info.eax_1.features & IA32_FEATURE_MMX) != 0)
+		featureFlags |= X86_CPU_FEATURE_FLAG_MMX;
+
+	if ((info.eax_1.features & IA32_FEATURE_SSE) != 0)
+		featureFlags |= X86_CPU_FEATURE_FLAG_SSE;
+
+	fArchitecture = new(std::nothrow) ArchitectureX86(this, featureFlags);
+
+#elif defined(ARCH_x86_64)
+	fArchitecture = new(std::nothrow) ArchitectureX8664(this);
+#else
+	return B_UNSUPPORTED;
+#endif
+
+	if (fArchitecture == NULL)
+		return B_NO_MEMORY;
+
+	error = fArchitecture->Init();
+	if (error != B_OK)
+		return error;
+
+	return B_OK;
 }
 
 

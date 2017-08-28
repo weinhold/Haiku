@@ -333,13 +333,6 @@ RemoteDebuggerInterface::SetCpuState(thread_id thread, const CpuState* state)
 
 
 status_t
-RemoteDebuggerInterface::GetCpuFeatures(uint32& flags)
-{
-	return fArchitecture->GetCpuFeatures(flags);
-}
-
-
-status_t
 RemoteDebuggerInterface::WriteCoreFile(const char* path)
 {
 	return sendRequestStatusOnlyResponse(*fConnection,

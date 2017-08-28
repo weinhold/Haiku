@@ -29,10 +29,6 @@
 #include "disasm/DisassemblerX86.h"
 
 
-#define IA32_FEATURE_MMX	(1 << 23)
-#define IA32_FEATURE_SSE	(1 << 25)
-
-
 static const int32 kFromDwarfRegisters[] = {
 	X86_REGISTER_EAX,
 	X86_REGISTER_ECX,
@@ -125,10 +121,10 @@ struct ArchitectureX86::FromDwarfRegisterMap : RegisterMap {
 // #pragma mark - ArchitectureX86
 
 
-ArchitectureX86::ArchitectureX86(TeamMemory* teamMemory)
+ArchitectureX86::ArchitectureX86(TeamMemory* teamMemory, uint32 featureFlags)
 	:
 	Architecture(teamMemory, 4, sizeof(x86_debug_cpu_state), false),
-	fFeatureFlags(0),
+	fFeatureFlags(featureFlags),
 	fAssemblyLanguage(NULL),
 	fToDwarfRegisterMap(NULL),
 	fFromDwarfRegisterMap(NULL)
@@ -153,23 +149,6 @@ ArchitectureX86::Init()
 	fAssemblyLanguage = new(std::nothrow) X86AssemblyLanguage;
 	if (fAssemblyLanguage == NULL)
 		return B_NO_MEMORY;
-
-#if defined(__INTEL__)
-	// TODO: this needs to be determined/retrieved indirectly from the
-	// target host interface, as in the remote case the CPU features may
-	// differ from those of the local CPU.
-	cpuid_info info;
-	status_t error = get_cpuid(&info, 1, 0);
-	if (error != B_OK)
-		return error;
-
-	if ((info.eax_1.features & IA32_FEATURE_MMX) != 0)
-		fFeatureFlags |= X86_CPU_FEATURE_FLAG_MMX;
-
-	if ((info.eax_1.features & IA32_FEATURE_SSE) != 0)
-		fFeatureFlags |= X86_CPU_FEATURE_FLAG_SSE;
-
-#endif
 
 	try {
 		_AddIntegerRegister(X86_REGISTER_EIP, "eip", B_UINT32_TYPE,
@@ -314,12 +293,10 @@ ArchitectureX86::GetDwarfRegisterMaps(RegisterMap** _toDwarf,
 }
 
 
-status_t
-ArchitectureX86::GetCpuFeatures(uint32& flags) const
+uint32
+ArchitectureX86::CpuFeatures() const
 {
-	flags = fFeatureFlags;
-
-	return B_OK;
+	return fFeatureFlags;
 }
 
 

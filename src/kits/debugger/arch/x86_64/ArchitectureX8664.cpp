@@ -341,12 +341,11 @@ ArchitectureX8664::GetDwarfRegisterMaps(RegisterMap** _toDwarf,
 }
 
 
-status_t
-ArchitectureX8664::GetCpuFeatures(uint32& flags) const
+uint32
+ArchitectureX8664::CpuFeatures() const
 {
 	// TODO: implement if/when it winds up being needed.
-	flags = 0;
-	return B_OK;
+	return 0;
 }
 
 

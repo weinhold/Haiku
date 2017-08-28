@@ -87,8 +87,6 @@ public:
 	virtual	status_t			SetCpuState(thread_id thread,
 									const CpuState* state) = 0;
 
-	virtual	status_t			GetCpuFeatures(uint32& flags) = 0;
-
 	virtual	status_t			WriteCoreFile(const char* path) = 0;
 
 	// TeamMemory

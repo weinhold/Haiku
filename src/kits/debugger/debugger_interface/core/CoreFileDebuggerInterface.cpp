@@ -47,8 +47,14 @@ CoreFileDebuggerInterface::Init()
 	uint16 machine = fCoreFile->GetElfFile().Machine();
 	switch (machine) {
 		case EM_386:
-			fArchitecture = new(std::nothrow) ArchitectureX86(this);
+		{
+			// TODO: Determine the actual feature flags!
+			uint32 featureFlags = X86_CPU_FEATURE_FLAG_MMX
+				| X86_CPU_FEATURE_FLAG_SSE;
+			fArchitecture = new(std::nothrow) ArchitectureX86(this,
+				featureFlags);
 			break;
+		}
 		case EM_X86_64:
 			fArchitecture = new(std::nothrow) ArchitectureX8664(this);
 			break;
@@ -308,13 +314,6 @@ status_t
 CoreFileDebuggerInterface::SetCpuState(thread_id thread, const CpuState* state)
 {
 	return B_UNSUPPORTED;
-}
-
-
-status_t
-CoreFileDebuggerInterface::GetCpuFeatures(uint32& flags)
-{
-	return fArchitecture->GetCpuFeatures(flags);
 }
 
 

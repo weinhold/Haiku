@@ -154,14 +154,6 @@ DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
 		status_t, 					error
 	),
 
-	GetCpuFeatures,
-	(
-		uint32,						flags
-	),
-	(
-		status_t, 					error
-	),
-
 	WriteCoreFile,
 	(
 		BString,					path

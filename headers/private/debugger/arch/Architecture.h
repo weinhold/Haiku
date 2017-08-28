@@ -75,7 +75,7 @@ public:
 									RegisterMap** _fromDwarf) const = 0;
 										// returns references
 
-	virtual	status_t			GetCpuFeatures(uint32& flags) const = 0;
+	virtual	uint32				CpuFeatures() const = 0;
 
 	virtual	status_t			CreateCpuState(CpuState*& _state) const = 0;
 	virtual	status_t			CreateCpuState(const void* cpuStateData,

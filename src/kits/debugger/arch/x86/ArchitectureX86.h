@@ -25,7 +25,8 @@ class SourceLanguage;
 
 class ArchitectureX86 : public Architecture {
 public:
-								ArchitectureX86(TeamMemory* teamMemory);
+								ArchitectureX86(TeamMemory* teamMemory,
+									uint32 featureFlags);
 	virtual						~ArchitectureX86();
 
 	virtual	status_t			Init();
@@ -39,7 +40,7 @@ public:
 	virtual	status_t			GetDwarfRegisterMaps(RegisterMap** _toDwarf,
 									RegisterMap** _fromDwarf) const;
 
-	virtual	status_t			GetCpuFeatures(uint32& flags) const;
+	virtual	uint32				CpuFeatures() const;
 
 	virtual	status_t			CreateCpuState(CpuState*& _state) const;
 	virtual	status_t			CreateCpuState(const void* cpuStateData,
