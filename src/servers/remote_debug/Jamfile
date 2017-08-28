@@ -1,0 +1,41 @@
+SubDir HAIKU_TOP src servers remote_debug ;
+
+UsePrivateHeaders debugger shared ;
+UsePrivateHeaders [ FDirName debugger arch ] ;
+UsePrivateHeaders [ FDirName debugger controllers ] ;
+UsePrivateHeaders [ FDirName debugger debug_info ] ;
+UsePrivateHeaders [ FDirName debugger debug_managers ] ;
+UsePrivateHeaders [ FDirName debugger debugger_interface ] ;
+UsePrivateHeaders [ FDirName debugger elf ] ;
+UsePrivateHeaders [ FDirName debugger files ] ;
+UsePrivateHeaders [ FDirName debugger ids ] ;
+UsePrivateHeaders [ FDirName debugger model ] ;
+UsePrivateHeaders [ FDirName debugger settings ] ;
+UsePrivateHeaders [ FDirName debugger settings generic ] ;
+UsePrivateHeaders [ FDirName debugger source_language ] ;
+UsePrivateHeaders [ FDirName debugger source_language c_family ] ;
+UsePrivateHeaders [ FDirName debugger target_host_interface ] ;
+UsePrivateHeaders [ FDirName debugger user_interface ] ;
+UsePrivateHeaders [ FDirName debugger user_interface util ] ;
+UsePrivateHeaders [ FDirName debugger types ] ;
+UsePrivateHeaders [ FDirName debugger util ] ;
+UsePrivateHeaders [ FDirName debugger value ] ;
+UsePrivateHeaders [ FDirName debugger value value_formatters ] ;
+UsePrivateHeaders [ FDirName debugger value value_nodes ] ;
+UsePrivateHeaders [ FDirName debugger value values ] ;
+
+UsePrivateHeaders debug kernel shared ;
+
+AddResources debug_server : debug_server.rdef ;
+
+Server remote_debug_server
+ 	:
+ 	DebuggerInterfaceServer.cpp
+ 	RemoteDebugServer.cpp
+	:
+	be
+	libdebugger.so
+	shared
+	[ TargetLibstdc++ ]
+	localestub
+;

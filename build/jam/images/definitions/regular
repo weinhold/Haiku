@@ -100,6 +100,7 @@ SYSTEM_SERVERS += [ FFilterByBuildFeatures
 	mail_daemon media_addon_server media_server midi_server
 	nfs4_idmapper_server bluetooth_server
 	print_server print_addon_server
+	remote_debug_server
 ] ;
 
 # Bluetooth stack + drivers
