@@ -6,8 +6,6 @@
 #define UTIL_MACRO_MAGIC_H
 
 
-#include "StructInspector.h"
-
 
 //! Returns the number of macro arguments.
 #define COUNT_MACRO_ARGS(...)						\
