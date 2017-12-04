@@ -100,9 +100,9 @@ public:
 			TeamRow* 			FindTeamRow(team_id teamId);
 
 			// TargetHost::Listener
-	virtual	void				TeamAdded(TeamInfo* info);
+	virtual	void				TeamAdded(const TeamInfo& info);
 	virtual	void				TeamRemoved(team_id team);
-	virtual	void				TeamRenamed(TeamInfo* info);
+	virtual	void				TeamRenamed(const TeamInfo& info);
 
 			// TeamsWindow::Listener
 	virtual	void				SelectedInterfaceChanged(

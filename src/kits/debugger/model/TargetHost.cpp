@@ -61,7 +61,7 @@ TargetHost::AddTeam(const team_info& info)
 	if (!fTeams.BinaryInsert(teamInfo, &_CompareTeams))
 		return B_NO_MEMORY;
 
-	_NotifyTeamAdded(teamInfo);
+	_NotifyTeamAdded(*teamInfo);
 	return B_OK;
 }
 
@@ -90,7 +90,7 @@ TargetHost::UpdateTeam(const team_info& info)
 
 	TeamInfo* teamInfo = fTeams.ItemAt(index);
 	teamInfo->SetTo(info.team, info);
-	_NotifyTeamRenamed(teamInfo);
+	_NotifyTeamRenamed(*teamInfo);
 }
 
 
@@ -127,7 +127,7 @@ TargetHost::_FindTeamByKey(const team_id* id, const TeamInfo* info)
 
 
 void
-TargetHost::_NotifyTeamAdded(TeamInfo* info)
+TargetHost::_NotifyTeamAdded(const TeamInfo& info)
 {
 	for (ListenerList::Iterator it = fListeners.GetIterator();
 			Listener* listener = it.Next();) {
@@ -147,7 +147,7 @@ TargetHost::_NotifyTeamRemoved(team_id team)
 
 
 void
-TargetHost::_NotifyTeamRenamed(TeamInfo* info)
+TargetHost::_NotifyTeamRenamed(const TeamInfo& info)
 {
 	for (ListenerList::Iterator it = fListeners.GetIterator();
 			Listener* listener = it.Next();) {
@@ -165,7 +165,7 @@ TargetHost::Listener::~Listener()
 
 
 void
-TargetHost::Listener::TeamAdded(TeamInfo* info)
+TargetHost::Listener::TeamAdded(const TeamInfo& info)
 {
 }
 
@@ -177,6 +177,6 @@ TargetHost::Listener::TeamRemoved(team_id team)
 
 
 void
-TargetHost::Listener::TeamRenamed(TeamInfo* info)
+TargetHost::Listener::TeamRenamed(const TeamInfo& info)
 {
 }

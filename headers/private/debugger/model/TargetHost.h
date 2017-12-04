@@ -49,9 +49,9 @@ private:
 	static	int					_FindTeamByKey(const team_id* id,
 									const TeamInfo* info);
 
-			void				_NotifyTeamAdded(TeamInfo* info);
+			void				_NotifyTeamAdded(const TeamInfo& info);
 			void				_NotifyTeamRemoved(team_id team);
-			void				_NotifyTeamRenamed(TeamInfo* info);
+			void				_NotifyTeamRenamed(const TeamInfo& info);
 
 private:
 			BString				fName;
@@ -66,9 +66,9 @@ class TargetHost::Listener
 public:
 	virtual						~Listener();
 
-	virtual	void				TeamAdded(TeamInfo* info);
+	virtual	void				TeamAdded(const TeamInfo& info);
 	virtual	void				TeamRemoved(team_id team);
-	virtual	void				TeamRenamed(TeamInfo* info);
+	virtual	void				TeamRenamed(const TeamInfo& info);
 };
 
 #endif	// TARGET_HOST_H

@@ -395,10 +395,10 @@ TeamsListView::FindTeamRow(team_id teamId)
 
 
 void
-TeamsListView::TeamAdded(TeamInfo* info)
+TeamsListView::TeamAdded(const TeamInfo& info)
 {
 	BMessage message(MSG_TEAM_ADDED);
-	message.AddInt32("team", info->TeamID());
+	message.AddInt32("team", info.TeamID());
 	BMessenger(this).SendMessage(&message);
 }
 
@@ -413,10 +413,10 @@ TeamsListView::TeamRemoved(team_id team)
 
 
 void
-TeamsListView::TeamRenamed(TeamInfo* info)
+TeamsListView::TeamRenamed(const TeamInfo& info)
 {
 	BMessage message(MSG_TEAM_RENAMED);
-	message.AddInt32("team", info->TeamID());
+	message.AddInt32("team", info.TeamID());
 	BMessenger(this).SendMessage(&message);
 }
 
