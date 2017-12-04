@@ -197,7 +197,7 @@ enum {
 };
 
 
-TeamRow::TeamRow(TeamInfo* info)
+TeamRow::TeamRow(const TeamInfo& info)
 	: BRow(std::max(20.0f, ceilf(be_plain_font->Size() * 1.4)))
 {
 	_SetTo(info);
@@ -205,12 +205,12 @@ TeamRow::TeamRow(TeamInfo* info)
 
 
 bool
-TeamRow::NeedsUpdate(TeamInfo* info)
+TeamRow::NeedsUpdate(const TeamInfo& info)
 {
 	// Check if we need to rebuilt the row's fields because the team critical
 	// info (basically, app image running under that team ID) has changed
 
-	if (info->Arguments() != fTeamInfo.Arguments()) {
+	if (info.Arguments() != fTeamInfo.Arguments()) {
 		_SetTo(info);
 		return true;
 	}
@@ -220,9 +220,9 @@ TeamRow::NeedsUpdate(TeamInfo* info)
 
 
 status_t
-TeamRow::_SetTo(TeamInfo* info)
+TeamRow::_SetTo(const TeamInfo& info)
 {
-	fTeamInfo = *info;
+	fTeamInfo = info;
 
 	app_info appInfo;
 	status_t status = be_roster->GetRunningAppInfo(fTeamInfo.TeamID(),
@@ -324,18 +324,17 @@ TeamsListView::MessageReceived(BMessage* message)
 
 		case MSG_TEAM_ADDED:
 		{
-			TeamInfo* info;
 			team_id team;
 			if (message->FindInt32("team", &team) != B_OK)
 				break;
 
 			TargetHost* host = fInterface->GetTargetHost();
 			AutoLocker<TargetHost> hostLocker(host);
-			info = host->TeamInfoByID(team);
+			const TeamInfo* info = host->TeamInfoByID(team);
 			if (info == NULL)
 				break;
 
-			TeamRow* row = new TeamRow(info);
+			TeamRow* row = new TeamRow(*info);
 			AddRow(row);
 			break;
 		}
@@ -356,19 +355,18 @@ TeamsListView::MessageReceived(BMessage* message)
 
 		case MSG_TEAM_RENAMED:
 		{
-			TeamInfo* info;
 			team_id team;
 			if (message->FindInt32("team", &team) != B_OK)
 				break;
 
 			TargetHost* host = fInterface->GetTargetHost();
 			AutoLocker<TargetHost> hostLocker(host);
-			info = host->TeamInfoByID(team);
+			const TeamInfo* info = host->TeamInfoByID(team);
 			if (info == NULL)
 				break;
 
 			TeamRow* row = FindTeamRow(info->TeamID());
-			if (row != NULL && row->NeedsUpdate(info))
+			if (row != NULL && row->NeedsUpdate(*info))
 				UpdateRow(row);
 
 			break;
@@ -438,8 +436,8 @@ TeamsListView::_InitList()
 	TargetHost* host = fInterface->GetTargetHost();
 	AutoLocker<TargetHost> hostLocker(host);
 	for (int32 i = 0; i < host->CountTeams(); i++) {
-		TeamInfo* info = host->TeamInfoAt(i);
-		BRow* row = new TeamRow(info);
+		const TeamInfo* info = host->TeamInfoAt(i);
+		BRow* row = new TeamRow(*info);
 		AddRow(row);
 	}
 }

@@ -68,13 +68,13 @@ private:
 class TeamRow : public BRow {
 	typedef BRow Inherited;
 public:
-								TeamRow(TeamInfo* teamInfo);
+								TeamRow(const TeamInfo& teamInfo);
 
 public:
 			team_id				TeamID() const
 									{ return fTeamInfo.TeamID(); }
 
-			bool				NeedsUpdate(TeamInfo* info);
+			bool				NeedsUpdate(const TeamInfo& info);
 
 	virtual	void				SetEnabled(bool enabled)
 									{ fEnabled = enabled; }
@@ -82,7 +82,7 @@ public:
 									{ return fEnabled; }
 
 private:
-			status_t			_SetTo(TeamInfo* info);
+			status_t			_SetTo(const TeamInfo& info);
 
 private:
 			bool				fEnabled;
