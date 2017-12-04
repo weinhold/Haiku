@@ -16,6 +16,7 @@ UsePrivateHeaders [ FDirName debugger settings generic ] ;
 UsePrivateHeaders [ FDirName debugger source_language ] ;
 UsePrivateHeaders [ FDirName debugger source_language c_family ] ;
 UsePrivateHeaders [ FDirName debugger target_host_interface ] ;
+UsePrivateHeaders [ FDirName debugger target_host_interface remote ] ;
 UsePrivateHeaders [ FDirName debugger user_interface ] ;
 UsePrivateHeaders [ FDirName debugger user_interface util ] ;
 UsePrivateHeaders [ FDirName debugger types ] ;
@@ -94,7 +95,7 @@ local sources =
 	ConnectionConfigView.cpp
 
 	# user_interface/gui/connection_config/config_handlers
-	NetworkConnectionConfigHandler.cpp
+	GenericConnectionConfigHandler.cpp
 	NetworkConnectionConfigView.cpp
 
 	# user_interface/gui/model

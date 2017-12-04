@@ -6,8 +6,11 @@
 
 #include <AutoDeleter.h>
 
-#include "NetworkConnectionConfigHandler.h"
+#include "GenericConnectionConfigHandler.h"
 #include "TargetHostInterfaceInfo.h"
+
+
+struct NetworkConnectionConfigView;
 
 
 /*static*/ ConnectionConfigHandlerRoster*
@@ -120,8 +123,9 @@ ConnectionConfigHandlerRoster::_RegisterHandlers()
 	ObjectDeleter<ConnectionConfigHandler> handlerDeleter;
 
 	#undef REGISTER_HANDLER_INFO
-	#define REGISTER_HANDLER_INFO(type) \
-		handler = new(std::nothrow) type##ConnectionConfigHandler; \
+	#define REGISTER_HANDLER_INFO(type, name) \
+		handler = new(std::nothrow) \
+			GenericConnectionConfigHandler<type##ConnectionConfigView>(name); \
 		if (handler == NULL) \
 			return B_NO_MEMORY; \
 		handlerDeleter.SetTo(handler); \
@@ -129,7 +133,7 @@ ConnectionConfigHandlerRoster::_RegisterHandlers()
 			return B_NO_MEMORY; \
 		handlerDeleter.Detach(); \
 
-	REGISTER_HANDLER_INFO(Network)
+	REGISTER_HANDLER_INFO(Network, "Network")
 
 	return B_OK;
 }
