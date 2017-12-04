@@ -115,6 +115,11 @@ ConnectionConfigWindow::MessageReceived(BMessage* message)
 			PostMessage(B_QUIT_REQUESTED);
 			break;
 		}
+		case MSG_SWITCH_CONNECTION_TYPE:
+		{
+			_SetActiveConfig(message);
+			break;
+		}
 		default:
 			BWindow::MessageReceived(message);
 			break;
@@ -155,12 +160,7 @@ ConnectionConfigWindow::_Init()
 	if (menu->CountItems() > 0) {
 		BMenuItem* item = menu->ItemAt(0);
 		BMessage* message = item->Message();
-		TargetHostInterfaceInfo* info = NULL;
-		if (message->FindPointer("info", reinterpret_cast<void**>(&info))
-			== B_OK) {
-			_UpdateActiveConfig(info);
-			menu->ItemAt(0)->SetMarked(true);
-		}
+		_SetActiveConfig(message, item);
 	}
 }
 
@@ -189,13 +189,25 @@ ConnectionConfigWindow::_BuildTypeMenu()
 
 
 void
-ConnectionConfigWindow::_UpdateActiveConfig(TargetHostInterfaceInfo* info)
+ConnectionConfigWindow::_SetActiveConfig(const BMessage* message,
+	BMenuItem* item)
 {
+	// get the info
+	TargetHostInterfaceInfo* info = NULL;
+	if (message->FindPointer("info", reinterpret_cast<void**>(&info)) != B_OK)
+		return;
+
+	if (info == fActiveInfo)
+		return;
+
+	// remove current config view
 	if (fConfigGroupView->CountChildren() > 0) {
 		BView* view = fConfigGroupView->ChildAt(0);
 		fConfigGroupView->RemoveChild(view);
 		delete view;
 	}
+
+	fActiveInfo = NULL;
 
 	ConnectionConfigHandlerRoster* roster
 		= ConnectionConfigHandlerRoster::Default();
@@ -215,4 +227,17 @@ ConnectionConfigWindow::_UpdateActiveConfig(TargetHostInterfaceInfo* info)
 	}
 
 	fConfigGroupView->InvalidateLayout();
+
+	// mark respective menu item
+	BMenu* menu = fConnectionTypeField->Menu();
+	if (item == NULL) {
+		int32 index;
+		if (message->FindInt32("index", &index) == B_OK)
+			item = menu->ItemAt(index);
+	}
+
+	if (item != NULL)
+		item->SetMarked(true);
 }
+
+

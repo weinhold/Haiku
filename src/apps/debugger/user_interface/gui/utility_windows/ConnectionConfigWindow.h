@@ -43,8 +43,8 @@ public:
 private:
 			void	 			_Init();
 			BMenu*				_BuildTypeMenu();
-			void				_UpdateActiveConfig(
-									TargetHostInterfaceInfo* info);
+			void				_SetActiveConfig(const BMessage* message,
+									BMenuItem* item = NULL);
 
 private:
 			BMenuField*			fConnectionTypeField;
