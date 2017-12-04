@@ -557,7 +557,7 @@ LocalDebuggerInterface::GetTeamInfo(TeamInfo& info)
 	if (result != B_OK)
 		return result;
 
-	info.SetTo(fTeamID, teamInfo);
+	info.SetTo(fTeamID, teamInfo.args);
 	return B_OK;
 }
 

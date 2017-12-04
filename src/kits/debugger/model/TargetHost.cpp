@@ -52,9 +52,9 @@ TargetHost::CountTeams() const
 
 
 status_t
-TargetHost::AddTeam(const team_info& info)
+TargetHost::AddTeam(const TeamInfo& info)
 {
-	TeamInfo* teamInfo = new (std::nothrow) TeamInfo(info.team, info);
+	TeamInfo* teamInfo = new (std::nothrow) TeamInfo(info);
 	if (teamInfo == NULL)
 		return B_NO_MEMORY;
 
@@ -81,15 +81,15 @@ TargetHost::RemoveTeam(team_id team)
 
 
 void
-TargetHost::UpdateTeam(const team_info& info)
+TargetHost::UpdateTeam(const TeamInfo& info)
 {
-	int32 index = fTeams.BinarySearchIndexByKey(info.team,
+	int32 index = fTeams.BinarySearchIndexByKey(info.TeamID(),
 		&_FindTeamByKey);
 	if (index < 0)
 		return;
 
 	TeamInfo* teamInfo = fTeams.ItemAt(index);
-	teamInfo->SetTo(info.team, info);
+	*teamInfo = info;
 	_NotifyTeamRenamed(*teamInfo);
 }
 

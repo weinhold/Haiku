@@ -24,6 +24,7 @@
 #include "CoreFileDebuggerInterface.h"
 #include "LocalDebuggerInterface.h"
 #include "TargetHost.h"
+#include "TeamInfo.h"
 
 using std::set;
 
@@ -90,7 +91,7 @@ LocalTargetHostInterface::Init(Settings* settings)
 
 	int32 cookie = 0;
 	while (get_next_team_info(&cookie, &info) == B_OK) {
-		error = fTargetHost->AddTeam(info);
+		error = fTargetHost->AddTeam(TeamInfo(info.team, info.args));
 		if (error != B_OK)
 			return error;
 	}
@@ -340,10 +341,11 @@ LocalTargetHostInterface::_HandleTeamEvent(team_id team, int32 opcode,
 					return B_OK;
 			}
 
+			TeamInfo teamInfo(info.team, info.args);
 			if (opcode == B_TEAM_CREATED)
-				fTargetHost->AddTeam(info);
+				fTargetHost->AddTeam(teamInfo);
 			else
-				fTargetHost->UpdateTeam(info);
+				fTargetHost->UpdateTeam(teamInfo);
 			break;
 		}
 

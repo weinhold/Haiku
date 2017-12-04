@@ -22,17 +22,9 @@ TeamInfo::TeamInfo(const TeamInfo &other)
 }
 
 
-TeamInfo::TeamInfo(team_id team, const team_info& info)
+TeamInfo::TeamInfo(team_id team, const BString& arguments)
 {
-	SetTo(team, info);
-}
-
-
-void
-TeamInfo::SetTo(team_id team, const team_info& info)
-{
-	fTeam = team;
-	fArguments.SetTo(info.args);
+	SetTo(team, arguments);
 }
 
 

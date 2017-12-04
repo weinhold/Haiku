@@ -33,9 +33,9 @@ public:
 			void				RemoveListener(Listener* listener);
 
 			int32				CountTeams() const;
-			status_t			AddTeam(const team_info& info);
+			status_t			AddTeam(const TeamInfo& info);
 			void				RemoveTeam(team_id team);
-			void				UpdateTeam(const team_info& info);
+			void				UpdateTeam(const TeamInfo& info);
 			TeamInfo*			TeamInfoAt(int32 index) const;
 			TeamInfo*			TeamInfoByID(team_id team) const;
 
