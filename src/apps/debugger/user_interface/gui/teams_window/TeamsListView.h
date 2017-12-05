@@ -68,13 +68,13 @@ private:
 class TeamRow : public BRow {
 	typedef BRow Inherited;
 public:
-								TeamRow(const TeamInfo& teamInfo);
+								TeamRow(const TeamInfo& teamInfo, bool isLocal);
 
 public:
 			team_id				TeamID() const
 									{ return fTeamInfo.TeamID(); }
 
-			bool				NeedsUpdate(const TeamInfo& info);
+			bool				NeedsUpdate(const TeamInfo& info, bool isLocal);
 
 	virtual	void				SetEnabled(bool enabled)
 									{ fEnabled = enabled; }
@@ -82,7 +82,7 @@ public:
 									{ return fEnabled; }
 
 private:
-			status_t			_SetTo(const TeamInfo& info);
+			status_t			_SetTo(const TeamInfo& info, bool isLocal);
 
 private:
 			bool				fEnabled;

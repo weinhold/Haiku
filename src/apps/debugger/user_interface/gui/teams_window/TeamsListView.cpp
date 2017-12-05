@@ -197,21 +197,21 @@ enum {
 };
 
 
-TeamRow::TeamRow(const TeamInfo& info)
+TeamRow::TeamRow(const TeamInfo& info, bool isLocal)
 	: BRow(std::max(20.0f, ceilf(be_plain_font->Size() * 1.4)))
 {
-	_SetTo(info);
+	_SetTo(info, isLocal);
 }
 
 
 bool
-TeamRow::NeedsUpdate(const TeamInfo& info)
+TeamRow::NeedsUpdate(const TeamInfo& info, bool isLocal)
 {
 	// Check if we need to rebuilt the row's fields because the team critical
 	// info (basically, app image running under that team ID) has changed
 
 	if (info.Arguments() != fTeamInfo.Arguments()) {
-		_SetTo(info);
+		_SetTo(info, isLocal);
 		return true;
 	}
 
@@ -220,35 +220,43 @@ TeamRow::NeedsUpdate(const TeamInfo& info)
 
 
 status_t
-TeamRow::_SetTo(const TeamInfo& info)
+TeamRow::_SetTo(const TeamInfo& info, bool isLocal)
 {
 	fTeamInfo = info;
-
-	app_info appInfo;
-	status_t status = be_roster->GetRunningAppInfo(fTeamInfo.TeamID(),
-		&appInfo);
-	if (status != B_OK) {
-		// Not an application known to be_roster
-
-		if (fTeamInfo.TeamID() == B_SYSTEM_TEAM) {
-			// Get icon and name from kernel image
-			system_info	systemInfo;
-			get_system_info(&systemInfo);
-
-			BPath kernelPath;
-			find_directory(B_BEOS_SYSTEM_DIRECTORY, &kernelPath);
-			kernelPath.Append(systemInfo.kernel_name);
-
-			get_ref_for_path(kernelPath.Path(), &appInfo.ref);
-
-		} else
-			BPrivate::get_app_ref(fTeamInfo.TeamID(), &appInfo.ref);
-	}
 
 	BBitmap* icon = new BBitmap(BRect(0, 0, B_MINI_ICON - 1, B_MINI_ICON - 1),
 		B_RGBA32);
 
-	status = BNodeInfo::GetTrackerIcon(&appInfo.ref, icon, B_MINI_ICON);
+	status_t status;
+
+	// TODO: This is just a temporary solution. The icon (data) should be
+	// provided with the TeamInfo. 
+	if (isLocal) {
+		app_info appInfo;
+		status = be_roster->GetRunningAppInfo(fTeamInfo.TeamID(), &appInfo);
+		if (status != B_OK) {
+			// Not an application known to be_roster
+
+			if (fTeamInfo.TeamID() == B_SYSTEM_TEAM) {
+				// Get icon and name from kernel image
+				system_info	systemInfo;
+				get_system_info(&systemInfo);
+
+				BPath kernelPath;
+				find_directory(B_BEOS_SYSTEM_DIRECTORY, &kernelPath);
+				kernelPath.Append(systemInfo.kernel_name);
+
+				get_ref_for_path(kernelPath.Path(), &appInfo.ref);
+
+			} else
+				BPrivate::get_app_ref(fTeamInfo.TeamID(), &appInfo.ref);
+		}
+
+		status = BNodeInfo::GetTrackerIcon(&appInfo.ref, icon, B_MINI_ICON);
+	} else {
+		status = B_NOT_SUPPORTED;
+	}
+
 	if (status != B_OK) {
 			BMimeType genericAppType(B_APP_MIME_TYPE);
 			status = genericAppType.GetIcon(icon, B_MINI_ICON);
@@ -334,7 +342,7 @@ TeamsListView::MessageReceived(BMessage* message)
 			if (info == NULL)
 				break;
 
-			TeamRow* row = new TeamRow(*info);
+			TeamRow* row = new TeamRow(*info, fInterface->IsLocal());
 			AddRow(row);
 			break;
 		}
@@ -366,7 +374,7 @@ TeamsListView::MessageReceived(BMessage* message)
 				break;
 
 			TeamRow* row = FindTeamRow(info->TeamID());
-			if (row != NULL && row->NeedsUpdate(*info))
+			if (row != NULL && row->NeedsUpdate(*info, fInterface->IsLocal()))
 				UpdateRow(row);
 
 			break;
@@ -437,7 +445,7 @@ TeamsListView::_InitList()
 	AutoLocker<TargetHost> hostLocker(host);
 	for (int32 i = 0; i < host->CountTeams(); i++) {
 		const TeamInfo* info = host->TeamInfoAt(i);
-		BRow* row = new TeamRow(*info);
+		BRow* row = new TeamRow(*info, fInterface->IsLocal());
 		AddRow(row);
 	}
 }
