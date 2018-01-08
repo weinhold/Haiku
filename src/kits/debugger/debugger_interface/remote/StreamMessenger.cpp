@@ -492,15 +492,6 @@ struct StreamMessenger::Impl {
 
 		PthreadMutexLocker locker(fLock);
 
-		// close all channels
-		for (Channel* channel = fChannels.Clear(true);
-				channel != NULL;) {
-			Channel* next = channel->HashTableNext();
-			_CloseChannelLocked(channel);
-			channel->ReleaseReference();
-			channel = next;
-		}
-
 		// delete all remaining messages (shouldn't be any)
 		while (Message* message = fReceivedMessages.PopMessage())
 			delete message;
@@ -698,6 +689,17 @@ private:
 
 		if (fStream != NULL)
 			fStream->Close();
+
+		PthreadMutexLocker locker(fLock);
+
+		// close all channels
+		for (Channel* channel = fChannels.Clear(true);
+				channel != NULL;) {
+			Channel* next = channel->HashTableNext();
+			_CloseChannelLocked(channel);
+			channel->ReleaseReference();
+			channel = next;
+		}
 
 		return true;
 	}
