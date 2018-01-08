@@ -777,8 +777,11 @@ private:
 
 			bool isReply = false;
 			error = _ReadMessage(message->envelope, message->message, isReply);
-			if (error != B_OK)
+			if (error != B_OK) {
+				TRACE_REMOTE("StreamMessenger::_MessageReader(): terminating,"
+					" failed to read message: %s\n", strerror(error));
 				break;
+			}
 
 			PthreadMutexLocker locker(fLock);
 
