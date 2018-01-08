@@ -100,7 +100,6 @@ public:
 		void *state) const;
 	int32 BinarySearchIndexByPredicate(const void *, UnaryPredicateGlue) const;
 
-	bool Owning() const;
 	bool ReplaceItem(int32, void *);
 	bool MoveItem(int32 from, int32 to);
 
@@ -131,6 +130,9 @@ public:
 			BObjectList&		operator=(const BObjectList& list);
 									// clones list; if list is owning, makes
 									// copies of all the items
+
+			bool				Owning() const;
+			void				SetOwning(bool owning);
 
 								// adding and removing
 			bool				AddItem(T*);
@@ -405,16 +407,6 @@ EachListItem(BObjectList<Item>* list,
 }
 
 
-// inline code
-
-
-inline bool
-_PointerList_::Owning() const
-{
-	return owning;
-}
-
-
 template<class T>
 BObjectList<T>::BObjectList(int32 itemsPerBlock, bool owning)
 	:
@@ -469,6 +461,22 @@ BObjectList<T>::operator=(const BObjectList<T>& list)
 		}
 	}
 	return result;
+}
+
+
+template<class T>
+inline bool
+BObjectList<T>::Owning() const
+{
+	return owning;
+}
+
+
+template<class T>
+inline void
+BObjectList<T>::SetOwning(bool owning)
+{
+	this->owning = owning;
 }
 
 
