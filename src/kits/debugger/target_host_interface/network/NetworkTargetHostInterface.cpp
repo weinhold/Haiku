@@ -34,7 +34,8 @@ NetworkTargetHostInterface::~NetworkTargetHostInterface()
 
 
 status_t
-NetworkTargetHostInterface::Init(Settings* settings)
+NetworkTargetHostInterface::Init(const BString& connectionName,
+	Settings* settings)
 {
 	return B_NOT_SUPPORTED;
 }

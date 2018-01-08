@@ -8,12 +8,16 @@
 #include "TargetHostInterface.h"
 
 
+struct Settings;
+
+
 class NetworkTargetHostInterface : public TargetHostInterface {
 public:
 								NetworkTargetHostInterface();
 	virtual						~NetworkTargetHostInterface();
 
-	virtual	status_t			Init(Settings* settings);
+			status_t			Init(const BString& connectionName,
+									Settings* settings);
 	virtual	void				Close();
 
 	virtual	bool				IsLocal() const;

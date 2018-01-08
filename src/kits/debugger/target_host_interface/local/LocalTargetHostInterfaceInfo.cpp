@@ -52,14 +52,14 @@ LocalTargetHostInterfaceInfo::GetSettingsDescription() const
 
 status_t
 LocalTargetHostInterfaceInfo::CreateInterface(Settings* settings,
-	TargetHostInterface*& _interface) const
+	const BString& /*connectionName*/, TargetHostInterface*& _interface) const
 {
 	LocalTargetHostInterface* interface
 		= new(std::nothrow) LocalTargetHostInterface;
 	if (interface == NULL)
 		return B_NO_MEMORY;
 
-	status_t error = interface->Init(settings);
+	status_t error = interface->Init();
 	if (error != B_OK) {
 		delete interface;
 		return error;

@@ -39,6 +39,7 @@ public:
 
 			status_t			CreateInterface(TargetHostInterfaceInfo* info,
 									Settings* settings,
+									const BString& connectionName,
 									TargetHostInterface*& _interface);
 
 			int32				CountActiveInterfaces() const;

@@ -16,7 +16,6 @@
 
 
 class DebuggerInterface;
-class Settings;
 class SettingsManager;
 class TargetHost;
 struct TeamDebuggerOptions;
@@ -37,7 +36,6 @@ public:
 			status_t			AddTeamDebugger(TeamDebugger* debugger);
 			void				RemoveTeamDebugger(TeamDebugger* debugger);
 
-	virtual	status_t			Init(Settings* settings) = 0;
 	virtual	void				Close() = 0;
 
 	virtual	bool				IsLocal() const = 0;

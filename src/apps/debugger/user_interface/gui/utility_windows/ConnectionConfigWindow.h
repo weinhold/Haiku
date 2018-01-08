@@ -14,6 +14,7 @@ class BButton;
 class BGroupView;
 class BMenu;
 class BMenuField;
+class BTextControl;
 class Settings;
 class TargetHostInterfaceInfo;
 
@@ -45,9 +46,12 @@ private:
 			BMenu*				_BuildTypeMenu();
 			void				_SetActiveConfig(const BMessage* message,
 									BMenuItem* item = NULL);
+			void				_UpdateConnectButton();
+			BString				_ConnectionName() const;
 
 private:
 			BMenuField*			fConnectionTypeField;
+			BTextControl*		fConnectionNameInput;
 			BGroupView*			fConfigGroupView;
 			BButton*			fCloseButton;
 			BButton*			fConnectButton;

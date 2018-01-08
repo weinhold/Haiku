@@ -125,7 +125,8 @@ TargetHostInterfaceRoster::InterfaceInfoAt(int32 index) const
 
 status_t
 TargetHostInterfaceRoster::CreateInterface(TargetHostInterfaceInfo* info,
-	Settings* settings, TargetHostInterface*& _interface)
+	Settings* settings, const BString& connectionName,
+	TargetHostInterface*& _interface)
 {
 	// TODO: this should eventually verify that an active interface with
 	// matching settings/type doesn't already exist, and if so, return that
@@ -133,7 +134,8 @@ TargetHostInterfaceRoster::CreateInterface(TargetHostInterfaceInfo* info,
 	// for the local host only requires one instance.
 	AutoLocker<TargetHostInterfaceRoster> locker(this);
 	TargetHostInterface* interface;
-	status_t error = info->CreateInterface(settings, interface);
+	status_t error = info->CreateInterface(settings, connectionName,
+		interface);
 	if (error != B_OK)
 		return error;
 

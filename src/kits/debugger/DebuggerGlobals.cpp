@@ -30,7 +30,7 @@ debugger_global_init(TargetHostInterfaceRoster::Listener* listener)
 	// by default
 	TargetHostInterface* hostInterface;
 	TargetHostInterfaceRoster* roster = TargetHostInterfaceRoster::Default();
-	error = roster->CreateInterface(roster->InterfaceInfoAt(0), NULL,
+	error = roster->CreateInterface(roster->InterfaceInfoAt(0), NULL, "",
 		hostInterface);
 	if (error != B_OK)
 		return error;

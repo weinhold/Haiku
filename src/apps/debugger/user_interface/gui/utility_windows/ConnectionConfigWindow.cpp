@@ -5,10 +5,13 @@
 #include "ConnectionConfigWindow.h"
 
 #include <Application.h>
+#include <Box.h>
 #include <Button.h>
 #include <GroupView.h>
-#include <MenuField.h>
 #include <LayoutBuilder.h>
+#include <MenuField.h>
+#include <SeparatorView.h>
+#include <TextControl.h>
 
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
@@ -23,7 +26,8 @@
 
 enum {
 	MSG_SWITCH_CONNECTION_TYPE 	= 'swct',
-	MSG_CREATE_CONNECTION 		= 'crco'
+	MSG_CREATE_CONNECTION 		= 'crco',
+	MSG_CONNECTION_NAME_CHANGED	= 'cnch'
 };
 
 
@@ -33,6 +37,7 @@ ConnectionConfigWindow::ConnectionConfigWindow()
 		B_AUTO_UPDATE_SIZE_LIMITS | B_CLOSE_ON_ESCAPE),
 	ConnectionConfigView::Listener(),
 	fConnectionTypeField(NULL),
+	fConnectionNameInput(NULL),
 	fConfigGroupView(NULL),
 	fCloseButton(NULL),
 	fConnectButton(NULL),
@@ -90,7 +95,7 @@ ConnectionConfigWindow::ConfigurationChanged(Settings* settings)
 	fCurrentSettings = settings;
 	fCurrentSettings->AcquireReference();
 
-	fConnectButton->SetEnabled(fActiveInfo->IsConfigured(settings));
+	_UpdateConnectButton();
 }
 
 
@@ -106,7 +111,7 @@ ConnectionConfigWindow::MessageReceived(BMessage* message)
 
 			TargetHostInterface* interface;
 			status_t error = roster->CreateInterface(fActiveInfo,
-				fCurrentSettings, interface);
+				fCurrentSettings, _ConnectionName(), interface);
 
 			// TODO: notify user.
 			if (error != B_OK)
@@ -116,10 +121,11 @@ ConnectionConfigWindow::MessageReceived(BMessage* message)
 			break;
 		}
 		case MSG_SWITCH_CONNECTION_TYPE:
-		{
 			_SetActiveConfig(message);
 			break;
-		}
+		case MSG_CONNECTION_NAME_CHANGED:
+			_UpdateConnectButton();
+			break;
 		default:
 			BWindow::MessageReceived(message);
 			break;
@@ -132,15 +138,15 @@ ConnectionConfigWindow::_Init()
 {
 	BMenu* menu = _BuildTypeMenu();
 
+	BBox* configGroupBox = NULL;
 	fConfigGroupView = new BGroupView(B_HORIZONTAL);
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL)
 		.SetInsets(B_USE_DEFAULT_SPACING)
-		.Add(fConnectionTypeField = new BMenuField("Type:", menu))
-		.AddGroup(fConfigGroupView)
-			// this group is a placeholder to contain
-			// the actual config view
-		.End()
+		.Add(fConnectionNameInput = new BTextControl(
+			"connectionName", "Name:", "",
+			new BMessage(MSG_CONNECTION_NAME_CHANGED)))
+		.Add(configGroupBox = new BBox("configGroup"))
 		.AddGroup(B_HORIZONTAL)
 			.SetInsets(B_USE_SMALL_SPACING)
 			.AddGlue()
@@ -150,8 +156,16 @@ ConnectionConfigWindow::_Init()
 					new BMessage(MSG_CREATE_CONNECTION)))
 		.End();
 
+	fConfigGroupView->GroupLayout()->SetInsets(B_USE_WINDOW_SPACING,
+		B_USE_WINDOW_SPACING);
+	configGroupBox->AddChild(fConfigGroupView);
+	configGroupBox->SetLabel(fConnectionTypeField = new BMenuField(NULL, menu));
+
 	fConnectionTypeField->Menu()->SetLabelFromMarked(true);
 	fConnectionTypeField->Menu()->SetTargetForItems(this);
+
+	fConnectionNameInput->SetModificationMessage(
+		new BMessage(MSG_CONNECTION_NAME_CHANGED));
 
 	fCloseButton->SetTarget(this);
 	fConnectButton->SetTarget(this);
@@ -162,6 +176,9 @@ ConnectionConfigWindow::_Init()
 		BMessage* message = item->Message();
 		_SetActiveConfig(message, item);
 	}
+
+	fConnectionTypeField->SetExplicitMaxSize(
+		fConnectionTypeField->MinSize());
 }
 
 
@@ -241,3 +258,20 @@ ConnectionConfigWindow::_SetActiveConfig(const BMessage* message,
 }
 
 
+void
+ConnectionConfigWindow::_UpdateConnectButton()
+{
+	fConnectButton->SetEnabled(
+		!_ConnectionName().IsEmpty()
+			&& fActiveInfo != NULL && fCurrentSettings != NULL
+			&& fActiveInfo->IsConfigured(fCurrentSettings));
+}
+
+
+BString
+ConnectionConfigWindow::_ConnectionName() const
+{
+	BString name = fConnectionNameInput->Text();
+	name.Trim();
+	return name;
+}

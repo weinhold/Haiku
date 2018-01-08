@@ -30,6 +30,7 @@ public:
 	virtual	SettingsDescription* GetSettingsDescription() const = 0;
 
 	virtual	status_t			CreateInterface(Settings* settings,
+									const BString& connectionName,
 									TargetHostInterface*& _interface) const
 									= 0;
 

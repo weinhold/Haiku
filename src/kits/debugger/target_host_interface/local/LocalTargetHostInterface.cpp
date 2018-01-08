@@ -48,7 +48,7 @@ LocalTargetHostInterface::~LocalTargetHostInterface()
 
 
 status_t
-LocalTargetHostInterface::Init(Settings* settings)
+LocalTargetHostInterface::Init()
 {
 	char hostname[HOST_NAME_MAX + 1];
 	status_t error = gethostname(hostname, sizeof(hostname));

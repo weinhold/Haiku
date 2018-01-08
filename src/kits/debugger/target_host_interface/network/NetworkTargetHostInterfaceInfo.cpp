@@ -91,14 +91,14 @@ NetworkTargetHostInterfaceInfo::GetSettingsDescription() const
 
 status_t
 NetworkTargetHostInterfaceInfo::CreateInterface(Settings* settings,
-	TargetHostInterface*& _interface) const
+	const BString& connectionName, TargetHostInterface*& _interface) const
 {
 	NetworkTargetHostInterface* interface
 		= new(std::nothrow) NetworkTargetHostInterface;
 	if (interface == NULL)
 		return B_NO_MEMORY;
 
-	status_t error = interface->Init(settings);
+	status_t error = interface->Init(connectionName, settings);
 	if (error != B_OK) {
 		delete interface;
 		return error;
