@@ -354,6 +354,7 @@ void unarchiveData(Context& context, const BMessage& archive, const char* name,
 	int32 index, BObjectList<Value>& list)
 {
 	list.MakeEmpty();
+	list.SetOwning(true);
 
 	type_code type;
 	int32 count;
