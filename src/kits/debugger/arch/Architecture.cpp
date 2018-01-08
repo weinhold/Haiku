@@ -1,5 +1,5 @@
 /*
- * Copyright 2009, Ingo Weinhold, ingo_weinhold@gmx.de.
+ * Copyright 2009-2018, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Copyright 2016, Rene Gollent, rene@gollent.com.
  * Distributed under the terms of the MIT License.
  */
@@ -24,10 +24,9 @@
 #include "Team.h"
 
 
-Architecture::Architecture(TeamMemory* teamMemory, uint8 addressSize,
-	size_t debugCpuStateSize, bool bigEndian)
+Architecture::Architecture(uint8 addressSize, size_t debugCpuStateSize,
+	bool bigEndian)
 	:
-	fTeamMemory(teamMemory),
 	fAddressSize(addressSize),
 	fDebugCpuStateSize(debugCpuStateSize),
 	fBigEndian(bigEndian)
@@ -94,7 +93,7 @@ Architecture::InitRegisterRules(CfaContext& context) const
 
 
 status_t
-Architecture::CreateStackTrace(Team* team,
+Architecture::CreateStackTrace(Team* team, TeamMemory* teamMemory,
 	ImageDebugInfoProvider* imageInfoProvider, CpuState* cpuState,
 	StackTrace*& _stackTrace, ReturnValueInfoList* returnValueInfos,
 	int32 maxStackDepth, bool useExistingTrace, bool getFullFrameInfo) const
@@ -155,7 +154,7 @@ Architecture::CreateStackTrace(Team* team,
 		// of the next frame, we let the architecture fix that.
 		if (nextFrame != NULL
 			&& nextFrame->ReturnAddress() == cpuState->InstructionPointer()) {
-			UpdateStackFrameCpuState(nextFrame, image,
+			UpdateStackFrameCpuState(teamMemory, nextFrame, image,
 				functionDebugInfo, cpuState);
 		}
 
@@ -174,8 +173,9 @@ Architecture::CreateStackTrace(Team* team,
 
 		// If we have no frame yet, let the architecture create it.
 		if (frame == NULL) {
-			status_t error = CreateStackFrame(image, functionDebugInfo,
-				cpuState, nextFrame == NULL, frame, previousCpuState);
+			status_t error = CreateStackFrame(teamMemory, image,
+				functionDebugInfo, cpuState, nextFrame == NULL, frame,
+				previousCpuState);
 			if (error != B_OK)
 				break;
 		}

@@ -51,12 +51,11 @@ CoreFileDebuggerInterface::Init()
 			// TODO: Determine the actual feature flags!
 			uint32 featureFlags = X86_CPU_FEATURE_FLAG_MMX
 				| X86_CPU_FEATURE_FLAG_SSE;
-			fArchitecture = new(std::nothrow) ArchitectureX86(this,
-				featureFlags);
+			fArchitecture = new(std::nothrow) ArchitectureX86(featureFlags);
 			break;
 		}
 		case EM_X86_64:
-			fArchitecture = new(std::nothrow) ArchitectureX8664(this);
+			fArchitecture = new(std::nothrow) ArchitectureX8664();
 			break;
 		default:
 			WARNING("Unsupported core file machine (%u)\n", machine);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2012, Ingo Weinhold, ingo_weinhold@gmx.de.
+ * Copyright 2009-2018, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Copyright 2011-2016, Rene Gollent, rene@gollent.com.
  * Distributed under the terms of the MIT License.
  */
@@ -121,9 +121,9 @@ struct ArchitectureX86::FromDwarfRegisterMap : RegisterMap {
 // #pragma mark - ArchitectureX86
 
 
-ArchitectureX86::ArchitectureX86(TeamMemory* teamMemory, uint32 featureFlags)
+ArchitectureX86::ArchitectureX86(uint32 featureFlags)
 	:
-	Architecture(teamMemory, 4, sizeof(x86_debug_cpu_state), false),
+	Architecture(4, sizeof(x86_debug_cpu_state), false),
 	fFeatureFlags(featureFlags),
 	fAssemblyLanguage(NULL),
 	fToDwarfRegisterMap(NULL),
@@ -330,9 +330,9 @@ ArchitectureX86::CreateCpuState(const void* cpuStateData, size_t size,
 
 
 status_t
-ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
-	CpuState* _cpuState, bool isTopFrame, StackFrame*& _frame,
-	CpuState*& _previousCpuState) const
+ArchitectureX86::CreateStackFrame(TeamMemory* teamMemory, Image* image,
+	FunctionDebugInfo* function, CpuState* _cpuState, bool isTopFrame,
+	StackFrame*& _frame, CpuState*& _previousCpuState) const
 {
 	CpuStateX86* cpuState = dynamic_cast<CpuStateX86*>(_cpuState);
 
@@ -357,14 +357,14 @@ ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 		// stack.
 		uint32 esp = cpuState->IntRegisterValue(X86_REGISTER_ESP);
 		uint32 address;
-		if (fTeamMemory->ReadMemory(esp, &address, 4) == 4) {
+		if (teamMemory->ReadMemory(esp, &address, 4) == 4) {
 			returnAddress = address;
 			previousFramePointer = framePointer;
 			framePointer = 0;
 			readStandardFrame = false;
 		}
 	} else {
-		hasPrologue = _HasFunctionPrologue(function);
+		hasPrologue = _HasFunctionPrologue(teamMemory, function);
 		if (hasPrologue)
 			frameType = STACK_FRAME_TYPE_STANDARD;
 		else
@@ -392,7 +392,7 @@ ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 					// check whether the current instruction is already a
 					// "ret".
 					uint8 code[1];
-					if (fTeamMemory->ReadMemory(eip, &code, 1) == 1
+					if (teamMemory->ReadMemory(eip, &code, 1) == 1
 						&& code[0] == 0xc3) {
 						stack = cpuState->IntRegisterValue(X86_REGISTER_ESP);
 					}
@@ -404,13 +404,13 @@ ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 				// executed. In such a case, what we need is right at the top
 				// of the stack.
 				uint8 data[1];
-				if (fTeamMemory->ReadMemory(eip, &data, 1) != 1)
+				if (teamMemory->ReadMemory(eip, &data, 1) != 1)
 					stack = cpuState->IntRegisterValue(X86_REGISTER_ESP);
 			}
 
 			if (stack != 0) {
 				uint32 address;
-				if (fTeamMemory->ReadMemory(stack, &address, 4) == 4) {
+				if (teamMemory->ReadMemory(stack, &address, 4) == 4) {
 					returnAddress = address;
 					previousFramePointer = framePointer;
 					framePointer = 0;
@@ -443,7 +443,7 @@ ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 	if (readStandardFrame) {
 		uint32 frameData[2];
 		if (framePointer != 0
-			&& fTeamMemory->ReadMemory(framePointer, frameData, 8) == 8) {
+			&& teamMemory->ReadMemory(framePointer, frameData, 8) == 8) {
 			previousFramePointer = frameData[0];
 			returnAddress = frameData[1];
 		}
@@ -472,9 +472,9 @@ ArchitectureX86::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 
 
 void
-ArchitectureX86::UpdateStackFrameCpuState(const StackFrame* frame,
-	Image* previousImage, FunctionDebugInfo* previousFunction,
-	CpuState* previousCpuState) const
+ArchitectureX86::UpdateStackFrameCpuState(TeamMemory* teamMemory,
+	const StackFrame* frame, Image* previousImage,
+	FunctionDebugInfo* previousFunction, CpuState* previousCpuState) const
 {
 	// This is not a top frame, so we want to offset eip to the previous
 	// (calling) instruction.
@@ -494,7 +494,7 @@ ArchitectureX86::UpdateStackFrameCpuState(const StackFrame* frame,
 	MemoryDeleter bufferDeleter(buffer);
 
 	// read the code
-	ssize_t bytesRead = fTeamMemory->ReadMemory(functionAddress, buffer,
+	ssize_t bytesRead = teamMemory->ReadMemory(functionAddress, buffer,
 		bufferSize);
 	if (bytesRead != (ssize_t)bufferSize)
 		return;
@@ -513,15 +513,15 @@ ArchitectureX86::UpdateStackFrameCpuState(const StackFrame* frame,
 
 
 status_t
-ArchitectureX86::ReadValueFromMemory(target_addr_t address, uint32 valueType,
-	BVariant& _value) const
+ArchitectureX86::ReadValueFromMemory(TeamMemory* teamMemory,
+	target_addr_t address, uint32 valueType, BVariant& _value) const
 {
 	uint8 buffer[64];
 	size_t size = BVariant::SizeOfType(valueType);
 	if (size == 0 || size > sizeof(buffer))
 		return B_BAD_VALUE;
 
-	ssize_t bytesRead = fTeamMemory->ReadMemory(address, buffer, size);
+	ssize_t bytesRead = teamMemory->ReadMemory(address, buffer, size);
 	if (bytesRead < 0)
 		return bytesRead;
 	if ((size_t)bytesRead != size)
@@ -569,8 +569,9 @@ ArchitectureX86::ReadValueFromMemory(target_addr_t address, uint32 valueType,
 
 
 status_t
-ArchitectureX86::ReadValueFromMemory(target_addr_t addressSpace,
-	target_addr_t address, uint32 valueType, BVariant& _value) const
+ArchitectureX86::ReadValueFromMemory(TeamMemory* teamMemory,
+	target_addr_t addressSpace, target_addr_t address, uint32 valueType,
+	BVariant& _value) const
 {
 	// n/a on this architecture
 	return B_BAD_VALUE;
@@ -618,13 +619,14 @@ ArchitectureX86::DisassembleCode(FunctionDebugInfo* function,
 
 
 status_t
-ArchitectureX86::GetStatement(FunctionDebugInfo* function,
-	target_addr_t address, Statement*& _statement) const
+ArchitectureX86::GetStatement(TeamMemory* teamMemory,
+	FunctionDebugInfo* function, target_addr_t address,
+	Statement*& _statement) const
 {
 // TODO: This is not architecture dependent anymore!
 	// get the instruction info
 	InstructionInfo info;
-	status_t error = GetInstructionInfo(address, info, NULL);
+	status_t error = GetInstructionInfo(teamMemory, address, info, NULL);
 	if (error != B_OK)
 		return error;
 
@@ -640,12 +642,12 @@ ArchitectureX86::GetStatement(FunctionDebugInfo* function,
 
 
 status_t
-ArchitectureX86::GetInstructionInfo(target_addr_t address,
-	InstructionInfo& _info, CpuState* state) const
+ArchitectureX86::GetInstructionInfo(TeamMemory* teamMemory,
+	target_addr_t address, InstructionInfo& _info, CpuState* state) const
 {
 	// read the code - maximum x86{-64} instruction size = 15 bytes
 	uint8 buffer[16];
-	ssize_t bytesRead = fTeamMemory->ReadMemory(address, buffer,
+	ssize_t bytesRead = teamMemory->ReadMemory(address, buffer,
 		sizeof(buffer));
 	if (bytesRead < 0)
 		return bytesRead;
@@ -661,20 +663,20 @@ ArchitectureX86::GetInstructionInfo(target_addr_t address,
 
 
 status_t
-ArchitectureX86::ResolvePICFunctionAddress(target_addr_t instructionAddress,
-	CpuState* state, target_addr_t& _targetAddress) const
+ArchitectureX86::ResolvePICFunctionAddress(TeamMemory* teamMemory,
+	target_addr_t instructionAddress, CpuState* state,
+	target_addr_t& _targetAddress) const
 {
 	// if the function in question is position-independent, the call
 	// will actually have taken us to its corresponding PLT slot.
 	// in such a case, look at the disassembled jump to determine
 	// where to find the actual function address.
 	InstructionInfo info;
-	if (GetInstructionInfo(instructionAddress, info, state) != B_OK) {
+	if (GetInstructionInfo(teamMemory, instructionAddress, info, state) != B_OK)
 		return B_BAD_VALUE;
-	}
 	target_addr_t subroutineAddress = info.TargetAddress();
 
-	ssize_t bytesRead = fTeamMemory->ReadMemory(info.TargetAddress(),
+	ssize_t bytesRead = teamMemory->ReadMemory(info.TargetAddress(),
 		&subroutineAddress, fAddressSize);
 
 	if (bytesRead != fAddressSize)
@@ -788,7 +790,8 @@ ArchitectureX86::_AddSIMDRegister(int32 index, const char* name,
 
 
 bool
-ArchitectureX86::_HasFunctionPrologue(FunctionDebugInfo* function) const
+ArchitectureX86::_HasFunctionPrologue(TeamMemory* teamMemory,
+	FunctionDebugInfo* function) const
 {
 	if (function == NULL)
 		return false;
@@ -798,7 +801,7 @@ ArchitectureX86::_HasFunctionPrologue(FunctionDebugInfo* function) const
 		return false;
 
 	uint8 buffer[3];
-	if (fTeamMemory->ReadMemory(function->Address(), buffer, 3) != 3)
+	if (teamMemory->ReadMemory(function->Address(), buffer, 3) != 3)
 		return false;
 
 	return buffer[0] == 0x55 && buffer[1] == 0x89 && buffer[2] == 0xe5;

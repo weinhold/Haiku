@@ -1,6 +1,6 @@
 /*
  * Copyright 2012, Alex Smith, alex@alex-smith.me.uk.
- * Copyright 2009-2012, Ingo Weinhold, ingo_weinhold@gmx.de.
+ * Copyright 2009-2018, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Copyright 2011-2016, Rene Gollent, rene@gollent.com.
  * Distributed under the terms of the MIT License.
  */
@@ -142,9 +142,9 @@ struct ArchitectureX8664::FromDwarfRegisterMap : RegisterMap {
 // #pragma mark - ArchitectureX8664
 
 
-ArchitectureX8664::ArchitectureX8664(TeamMemory* teamMemory)
+ArchitectureX8664::ArchitectureX8664()
 	:
-	Architecture(teamMemory, 8, sizeof(x86_64_debug_cpu_state), false),
+	Architecture(8, sizeof(x86_64_debug_cpu_state), false),
 	fAssemblyLanguage(NULL),
 	fToDwarfRegisterMap(NULL),
 	fFromDwarfRegisterMap(NULL)
@@ -379,9 +379,9 @@ ArchitectureX8664::CreateCpuState(const void* cpuStateData, size_t size,
 
 
 status_t
-ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
-	CpuState* _cpuState, bool isTopFrame, StackFrame*& _frame,
-	CpuState*& _previousCpuState) const
+ArchitectureX8664::CreateStackFrame(TeamMemory* teamMemory, Image* image,
+	FunctionDebugInfo* function, CpuState* _cpuState, bool isTopFrame,
+	StackFrame*& _frame, CpuState*& _previousCpuState) const
 {
 	CpuStateX8664* cpuState = dynamic_cast<CpuStateX8664*>(_cpuState);
 	uint64 framePointer = cpuState->IntRegisterValue(X86_64_REGISTER_RBP);
@@ -405,14 +405,14 @@ ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 		// stack.
 		uint64 rsp = cpuState->IntRegisterValue(X86_64_REGISTER_RSP);
 		uint64 address;
-		if (fTeamMemory->ReadMemory(rsp, &address, 8) == 8) {
+		if (teamMemory->ReadMemory(rsp, &address, 8) == 8) {
 			returnAddress = address;
 			previousFramePointer = framePointer;
 			framePointer = 0;
 			readStandardFrame = false;
 		}
 	} else {
-		hasPrologue = _HasFunctionPrologue(function);
+		hasPrologue = _HasFunctionPrologue(teamMemory, function);
 		if (hasPrologue)
 			frameType = STACK_FRAME_TYPE_STANDARD;
 		else
@@ -440,7 +440,7 @@ ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 					// check whether the current instruction is already a
 					// "ret".
 					uint8 code[1];
-					if (fTeamMemory->ReadMemory(rip, &code, 1) == 1
+					if (teamMemory->ReadMemory(rip, &code, 1) == 1
 						&& code[0] == 0xc3) {
 						stack = cpuState->IntRegisterValue(
 							X86_64_REGISTER_RSP);
@@ -453,13 +453,13 @@ ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 				// executed. In such a case, what we need is right at the top
 				// of the stack.
 				uint8 data[1];
-				if (fTeamMemory->ReadMemory(rip, &data, 1) != 1)
+				if (teamMemory->ReadMemory(rip, &data, 1) != 1)
 					stack = cpuState->IntRegisterValue(X86_64_REGISTER_RSP);
 			}
 
 			if (stack != 0) {
 				uint64 address;
-				if (fTeamMemory->ReadMemory(stack, &address, 8) == 8) {
+				if (teamMemory->ReadMemory(stack, &address, 8) == 8) {
 					returnAddress = address;
 					previousFramePointer = framePointer;
 					framePointer = 0;
@@ -492,7 +492,7 @@ ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 	if (readStandardFrame) {
 		uint64 frameData[2];
 		if (framePointer != 0
-			&& fTeamMemory->ReadMemory(framePointer, frameData, 16) == 16) {
+			&& teamMemory->ReadMemory(framePointer, frameData, 16) == 16) {
 			previousFramePointer = frameData[0];
 			returnAddress = frameData[1];
 		}
@@ -521,9 +521,9 @@ ArchitectureX8664::CreateStackFrame(Image* image, FunctionDebugInfo* function,
 
 
 void
-ArchitectureX8664::UpdateStackFrameCpuState(const StackFrame* frame,
-	Image* previousImage, FunctionDebugInfo* previousFunction,
-	CpuState* previousCpuState) const
+ArchitectureX8664::UpdateStackFrameCpuState(TeamMemory* teamMemory,
+	const StackFrame* frame, Image* previousImage,
+	FunctionDebugInfo* previousFunction, CpuState* previousCpuState) const
 {
 	// This is not a top frame, so we want to offset rip to the previous
 	// (calling) instruction.
@@ -543,7 +543,7 @@ ArchitectureX8664::UpdateStackFrameCpuState(const StackFrame* frame,
 	MemoryDeleter bufferDeleter(buffer);
 
 	// read the code
-	ssize_t bytesRead = fTeamMemory->ReadMemory(functionAddress, buffer,
+	ssize_t bytesRead = teamMemory->ReadMemory(functionAddress, buffer,
 		bufferSize);
 	if (bytesRead != (ssize_t)bufferSize)
 		return;
@@ -562,15 +562,15 @@ ArchitectureX8664::UpdateStackFrameCpuState(const StackFrame* frame,
 
 
 status_t
-ArchitectureX8664::ReadValueFromMemory(target_addr_t address, uint32 valueType,
-	BVariant& _value) const
+ArchitectureX8664::ReadValueFromMemory(TeamMemory* teamMemory,
+	target_addr_t address, uint32 valueType, BVariant& _value) const
 {
 	uint8 buffer[64];
 	size_t size = BVariant::SizeOfType(valueType);
 	if (size == 0 || size > sizeof(buffer))
 		return B_BAD_VALUE;
 
-	ssize_t bytesRead = fTeamMemory->ReadMemory(address, buffer, size);
+	ssize_t bytesRead = teamMemory->ReadMemory(address, buffer, size);
 	if (bytesRead < 0)
 		return bytesRead;
 	if ((size_t)bytesRead != size)
@@ -618,8 +618,9 @@ ArchitectureX8664::ReadValueFromMemory(target_addr_t address, uint32 valueType,
 
 
 status_t
-ArchitectureX8664::ReadValueFromMemory(target_addr_t addressSpace,
-	target_addr_t address, uint32 valueType, BVariant& _value) const
+ArchitectureX8664::ReadValueFromMemory(TeamMemory* teamMemory,
+	target_addr_t addressSpace, target_addr_t address, uint32 valueType,
+	BVariant& _value) const
 {
 	// n/a on this architecture
 	return B_BAD_VALUE;
@@ -667,13 +668,14 @@ ArchitectureX8664::DisassembleCode(FunctionDebugInfo* function,
 
 
 status_t
-ArchitectureX8664::GetStatement(FunctionDebugInfo* function,
-	target_addr_t address, Statement*& _statement) const
+ArchitectureX8664::GetStatement(TeamMemory* teamMemory,
+	FunctionDebugInfo* function, target_addr_t address,
+	Statement*& _statement) const
 {
 // TODO: This is not architecture dependent anymore!
 	// get the instruction info
 	InstructionInfo info;
-	status_t error = GetInstructionInfo(address, info, NULL);
+	status_t error = GetInstructionInfo(teamMemory, address, info, NULL);
 	if (error != B_OK)
 		return error;
 
@@ -689,12 +691,12 @@ ArchitectureX8664::GetStatement(FunctionDebugInfo* function,
 
 
 status_t
-ArchitectureX8664::GetInstructionInfo(target_addr_t address,
-	InstructionInfo& _info, CpuState* state) const
+ArchitectureX8664::GetInstructionInfo(TeamMemory* teamMemory,
+	target_addr_t address, InstructionInfo& _info, CpuState* state) const
 {
 	// read the code - maximum x86{-64} instruction size = 15 bytes
 	uint8 buffer[16];
-	ssize_t bytesRead = fTeamMemory->ReadMemory(address, buffer,
+	ssize_t bytesRead = teamMemory->ReadMemory(address, buffer,
 		sizeof(buffer));
 	if (bytesRead < 0)
 		return bytesRead;
@@ -710,8 +712,9 @@ ArchitectureX8664::GetInstructionInfo(target_addr_t address,
 
 
 status_t
-ArchitectureX8664::ResolvePICFunctionAddress(target_addr_t instructionAddress,
-	CpuState* state, target_addr_t& _targetAddress) const
+ArchitectureX8664::ResolvePICFunctionAddress(TeamMemory* teamMemory,
+	target_addr_t instructionAddress, CpuState* state,
+	target_addr_t& _targetAddress) const
 {
 	target_addr_t previousIP = state->InstructionPointer();
 	// if the function in question is position-independent, the call
@@ -719,7 +722,7 @@ ArchitectureX8664::ResolvePICFunctionAddress(target_addr_t instructionAddress,
 	// in such a case, look at the disassembled jump to determine
 	// where to find the actual function address.
 	InstructionInfo info;
-	if (GetInstructionInfo(instructionAddress, info, state) != B_OK)
+	if (GetInstructionInfo(teamMemory, instructionAddress, info, state) != B_OK)
 		return B_BAD_VALUE;
 
 	// x86-64 is likely to use a RIP-relative jump here
@@ -727,13 +730,14 @@ ArchitectureX8664::ResolvePICFunctionAddress(target_addr_t instructionAddress,
 	// after this instruction (where it would be during actual
 	// execution), and recalculate the target address of the jump
 	state->SetInstructionPointer(info.Address() + info.Size());
-	status_t result = GetInstructionInfo(info.Address(), info, state);
+	status_t result = GetInstructionInfo(teamMemory, info.Address(), info,
+		state);
 	state->SetInstructionPointer(previousIP);
 	if (result != B_OK)
 		return result;
 
 	target_addr_t subroutineAddress;
-	ssize_t bytesRead = fTeamMemory->ReadMemory(info.TargetAddress(),
+	ssize_t bytesRead = teamMemory->ReadMemory(info.TargetAddress(),
 		&subroutineAddress, fAddressSize);
 
 	if (bytesRead != fAddressSize)
@@ -835,7 +839,8 @@ ArchitectureX8664::_AddSIMDRegister(int32 index, const char* name,
 
 
 bool
-ArchitectureX8664::_HasFunctionPrologue(FunctionDebugInfo* function) const
+ArchitectureX8664::_HasFunctionPrologue(TeamMemory* teamMemory,
+	FunctionDebugInfo* function) const
 {
 	if (function == NULL)
 		return false;
@@ -845,7 +850,7 @@ ArchitectureX8664::_HasFunctionPrologue(FunctionDebugInfo* function) const
 		return false;
 
 	uint8 buffer[kFunctionPrologueSize];
-	if (fTeamMemory->ReadMemory(function->Address(), buffer,
+	if (teamMemory->ReadMemory(function->Address(), buffer,
 			kFunctionPrologueSize) != kFunctionPrologueSize) {
 		return false;
 	}

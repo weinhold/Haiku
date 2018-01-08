@@ -61,8 +61,9 @@ GetStackTraceJob::Do()
 
 	// get the stack trace
 	StackTrace* stackTrace;
-	status_t error = fArchitecture->CreateStackTrace(fThread->GetTeam(), this,
-		fCpuState, stackTrace, fThread->ReturnValueInfos());
+	status_t error = fArchitecture->CreateStackTrace(fThread->GetTeam(),
+		fDebuggerInterface, this, fCpuState, stackTrace,
+		fThread->ReturnValueInfos());
 	if (error != B_OK)
 		return error;
 	BReference<StackTrace> stackTraceReference(stackTrace, true);

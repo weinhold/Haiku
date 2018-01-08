@@ -836,10 +836,10 @@ LocalDebuggerInterface::_CreateArchitecture()
 	if ((info.eax_1.features & IA32_FEATURE_SSE) != 0)
 		featureFlags |= X86_CPU_FEATURE_FLAG_SSE;
 
-	fArchitecture = new(std::nothrow) ArchitectureX86(this, featureFlags);
+	fArchitecture = new(std::nothrow) ArchitectureX86(featureFlags);
 
 #elif defined(ARCH_x86_64)
-	fArchitecture = new(std::nothrow) ArchitectureX8664(this);
+	fArchitecture = new(std::nothrow) ArchitectureX8664();
 #else
 	return B_UNSUPPORTED;
 #endif

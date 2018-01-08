@@ -1,6 +1,6 @@
 /*
  * Copyright 2012, Alex Smith, alex@alex-smith.me.uk.
- * Copyright 2009, Ingo Weinhold, ingo_weinhold@gmx.de.
+ * Copyright 2009-2018, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Copyright 2011-2015, Rene Gollent, rene@gollent.com.
  * Distributed under the terms of the MIT License.
  */
@@ -19,7 +19,7 @@ class SourceLanguage;
 
 class ArchitectureX8664 : public Architecture {
 public:
-								ArchitectureX8664(TeamMemory* teamMemory);
+								ArchitectureX8664();
 	virtual						~ArchitectureX8664();
 
 	virtual	status_t			Init();
@@ -38,34 +38,39 @@ public:
 	virtual	status_t			CreateCpuState(CpuState*& _state) const;
 	virtual	status_t			CreateCpuState(const void* cpuStateData,
 									size_t size, CpuState*& _state) const;
-	virtual	status_t			CreateStackFrame(Image* image,
-									FunctionDebugInfo* function,
+	virtual	status_t			CreateStackFrame(TeamMemory* teamMemory,
+									Image* image, FunctionDebugInfo* function,
 									CpuState* cpuState, bool isTopFrame,
 									StackFrame*& _previousFrame,
 									CpuState*& _previousCpuState) const;
-	virtual	void				UpdateStackFrameCpuState(
+	virtual	void				UpdateStackFrameCpuState(TeamMemory* teamMemory,
 									const StackFrame* frame,
 									Image* previousImage,
 									FunctionDebugInfo* previousFunction,
 									CpuState* previousCpuState) const;
 
-	virtual	status_t			ReadValueFromMemory(target_addr_t address,
-									uint32 valueType, BVariant& _value) const;
-	virtual	status_t			ReadValueFromMemory(target_addr_t addressSpace,
+	virtual	status_t			ReadValueFromMemory(TeamMemory* teamMemory,
+									target_addr_t address, uint32 valueType,
+									BVariant& _value) const;
+	virtual	status_t			ReadValueFromMemory(TeamMemory* teamMemory,
+									target_addr_t addressSpace,
 									target_addr_t address, uint32 valueType,
 									BVariant& _value) const;
 
 	virtual	status_t			DisassembleCode(FunctionDebugInfo* function,
 									const void* buffer, size_t bufferSize,
 									DisassembledCode*& _sourceCode) const;
-	virtual	status_t			GetStatement(FunctionDebugInfo* function,
+	virtual	status_t			GetStatement(TeamMemory* teamMemory,
+									FunctionDebugInfo* function,
 									target_addr_t address,
 									Statement*& _statement) const;
-	virtual	status_t			GetInstructionInfo(target_addr_t address,
+	virtual	status_t			GetInstructionInfo(TeamMemory* teamMemory,
+									target_addr_t address,
 									InstructionInfo& _info,
 									CpuState* state) const;
-	virtual	status_t			ResolvePICFunctionAddress(target_addr_t
-									instructionAddress,
+	virtual	status_t			ResolvePICFunctionAddress(
+									TeamMemory* teamMemory,
+									target_addr_t instructionAddress,
 									CpuState* state,
 									target_addr_t& _targetAddress) const;
 
@@ -93,7 +98,7 @@ private:
 									const char* name);
 			void				_AddSIMDRegister(int32 index,
 									const char* name, uint32 byteSize);
-			bool				_HasFunctionPrologue(
+			bool				_HasFunctionPrologue(TeamMemory* teamMemory,
 									FunctionDebugInfo* function) const;
 private:
 			Array<Register>		fRegisters;

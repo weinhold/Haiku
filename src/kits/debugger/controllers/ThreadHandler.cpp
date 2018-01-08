@@ -362,8 +362,8 @@ ThreadHandler::HandleThreadAction(uint32 action, target_addr_t address)
 
 	if (stackTrace == NULL && cpuState != NULL) {
 		if (fDebuggerInterface->GetArchitecture()->CreateStackTrace(
-				fThread->GetTeam(), this, cpuState, stackTrace, NULL, 1,
-				false, false) == B_OK) {
+				fThread->GetTeam(), fDebuggerInterface, this, cpuState,
+				stackTrace, NULL, 1, false, false) == B_OK) {
 			stackTraceReference.SetTo(stackTrace, true);
 		}
 	}
@@ -601,7 +601,8 @@ ThreadHandler::_DoStepOver(CpuState* cpuState)
 	// just single-step, otherwise we set a breakpoint after the instruction.
 	InstructionInfo info;
 	if (fDebuggerInterface->GetArchitecture()->GetInstructionInfo(
-			cpuState->InstructionPointer(), info, cpuState) != B_OK) {
+			fDebuggerInterface, cpuState->InstructionPointer(), info,
+			cpuState) != B_OK) {
 		TRACE_CONTROL("  failed to get instruction info\n");
 		return false;
 	}
@@ -699,8 +700,8 @@ ThreadHandler::_HandleBreakpointHitStep(CpuState* cpuState)
 
 			if (stackTrace == NULL && cpuState != NULL) {
 				if (fDebuggerInterface->GetArchitecture()->CreateStackTrace(
-						fThread->GetTeam(), this, cpuState, stackTrace, NULL,
-						1, false, false) == B_OK) {
+						fThread->GetTeam(), fDebuggerInterface, this, cpuState,
+						stackTrace, NULL, 1, false, false) == B_OK) {
 					stackTraceReference.SetTo(stackTrace, true);
 				}
 			}
@@ -816,8 +817,8 @@ ThreadHandler::_HandleSingleStepStep(CpuState* cpuState)
 
 			if (stackTrace == NULL && cpuState != NULL) {
 				if (fDebuggerInterface->GetArchitecture()->CreateStackTrace(
-						fThread->GetTeam(), this, cpuState, stackTrace, NULL,
-						1, false, false) == B_OK) {
+						fThread->GetTeam(), fDebuggerInterface, this, cpuState,
+						stackTrace, NULL, 1, false, false) == B_OK) {
 					stackTraceReference.SetTo(stackTrace, true);
 				}
 			}
@@ -851,8 +852,9 @@ ThreadHandler::_HandleSingleStepStep(CpuState* cpuState)
 				BReference<StackTrace> stackTraceReference(stackTrace);
 				if (stackTrace == NULL && cpuState != NULL) {
 					if (fDebuggerInterface->GetArchitecture()->CreateStackTrace(
-							fThread->GetTeam(), this, cpuState, stackTrace,
-							NULL, 1, false, false) == B_OK) {
+							fThread->GetTeam(), fDebuggerInterface, this,
+							cpuState, stackTrace, NULL, 1, false,
+							false) == B_OK) {
 						stackTraceReference.SetTo(stackTrace, true);
 					}
 				}
@@ -918,8 +920,8 @@ ThreadHandler::_HandleBreakpointConditionIfNeeded(CpuState* cpuState)
 		BReference<StackTrace> stackTraceReference;
 		if (stackTrace == NULL) {
 			if (fDebuggerInterface->GetArchitecture()->CreateStackTrace(
-				fThread->GetTeam(), this, cpuState, stackTrace, NULL, 1,
-				false, true) == B_OK) {
+				fThread->GetTeam(), fDebuggerInterface, this, cpuState,
+				stackTrace, NULL, 1, false, true) == B_OK) {
 				stackTraceReference.SetTo(stackTrace, true);
 			} else
 				return false;

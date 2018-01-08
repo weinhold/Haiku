@@ -144,15 +144,15 @@ struct DwarfImageDebugInfo::BasicTargetInterface : DwarfTargetInterface {
 	virtual bool ReadValueFromMemory(target_addr_t address,
 		uint32 valueType, BVariant& _value) const
 	{
-		return fArchitecture->ReadValueFromMemory(address, valueType, _value)
-			== B_OK;
+		return fArchitecture->ReadValueFromMemory(fTeamMemory, address,
+			valueType, _value) == B_OK;
 	}
 
 	virtual bool ReadValueFromMemory(target_addr_t addressSpace,
 		target_addr_t address, uint32 valueType, BVariant& _value) const
 	{
-		return fArchitecture->ReadValueFromMemory(addressSpace, address,
-			valueType, _value) == B_OK;
+		return fArchitecture->ReadValueFromMemory(fTeamMemory, addressSpace,
+			address, valueType, _value) == B_OK;
 	}
 
 protected:
@@ -797,7 +797,8 @@ DwarfImageDebugInfo::GetStatement(FunctionDebugInfo* _function,
 	if (function == NULL) {
 		TRACE_LINES("  -> no dwarf function\n");
 		// fall back to assembly
-		return fArchitecture->GetStatement(function, address, _statement);
+		return fArchitecture->GetStatement(fDebuggerInterface, function,
+			address, _statement);
 	}
 
 	AutoLocker<BLocker> locker(fLock);
@@ -809,7 +810,8 @@ DwarfImageDebugInfo::GetStatement(FunctionDebugInfo* _function,
 		TRACE_CODE("  -> no source file\n");
 
 		// no source code -- rather return the assembly statement
-		return fArchitecture->GetStatement(function, address, _statement);
+		return fArchitecture->GetStatement(fDebuggerInterface, function,
+			address, _statement);
 	}
 
 	SourceCode* sourceCode = NULL;
@@ -820,7 +822,8 @@ DwarfImageDebugInfo::GetStatement(FunctionDebugInfo* _function,
 		// due to failing to locate the source file on disk or the user
 		// deliberately switching to disassembly view).
 		// return the assembly statement.
-		return fArchitecture->GetStatement(function, address, _statement);
+		return fArchitecture->GetStatement(fDebuggerInterface, function,
+			address, _statement);
 	}
 
 	// get the index of the source file in the compilation unit for cheaper
@@ -1225,7 +1228,8 @@ DwarfImageDebugInfo::_CreateReturnValues(ReturnValueInfoList* returnValueInfos,
 		if (imageInfo->GetAddressSectionType(subroutineAddress)
 				== ADDRESS_SECTION_TYPE_PLT) {
 			result = fArchitecture->ResolvePICFunctionAddress(
-				subroutineAddress, subroutineState, subroutineAddress);
+				fDebuggerInterface, subroutineAddress, subroutineState,
+				subroutineAddress);
 			if (result != B_OK)
 				continue;
 			if (!targetImage->ContainsAddress(subroutineAddress)) {

@@ -89,7 +89,8 @@ status_t
 DebuggerImageDebugInfo::GetStatement(FunctionDebugInfo* function,
 	target_addr_t address, Statement*& _statement)
 {
-	return fArchitecture->GetStatement(function, address, _statement);
+	return fArchitecture->GetStatement(fDebuggerInterface, function, address,
+		_statement);
 }
 
 
