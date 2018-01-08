@@ -14,6 +14,7 @@
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
 
+#include <Architecture.h>
 #include <DebuggerGlobals.h>
 #include <DebuggerInterface.h>
 #include <debugger_interface/remote/FdStream.h>
@@ -373,18 +374,27 @@ private:
 		// create a new channel
 		ChannelId channelId;
 		status_t requestError = fStreamMessenger->NewChannel(channelId);
+		BString architectureName;
+		uint32 cpuFeatureFlags = 0;
 
 		// start the debugger interface server
 		ObjectDeleter<DebuggerInterfaceServer> serverDeleter;
+		BReference<DebuggerInterface> debuggerInterface;
 		if (requestError == B_OK) {
 			requestError = _AttachToTeam(channelId, request->teamId,
-				request->threadId, serverDeleter);
-			if (requestError != B_OK)
+				request->threadId, serverDeleter, debuggerInterface);
+			if (requestError == B_OK) {
+				Architecture* architecture
+					= debuggerInterface->GetArchitecture();
+				architectureName = architecture->Name();
+				cpuFeatureFlags = architecture->CpuFeatures();
+			} else
 				fStreamMessenger->DeleteChannel(channelId);
 		}
 
 		// send the response
-		AttachToTeamResponse response(requestError, channelId);
+		AttachToTeamResponse response(requestError, channelId, architectureName,
+			cpuFeatureFlags);
 		status_t error = fManagementConnection->SendResponse(fCurrentRequestId,
 			response);
 		if (error != B_OK)
@@ -415,7 +425,8 @@ private:
 
 private:
 	status_t _AttachToTeam(ChannelId channelId, team_id teamId,
-		thread_id threadId, ObjectDeleter<DebuggerInterfaceServer>& _server)
+		thread_id threadId, ObjectDeleter<DebuggerInterfaceServer>& _server,
+		BReference<DebuggerInterface>& _debuggerInterface)
 	{
 		// create the debugger interface
 		DebuggerInterface* debuggerInterface;
@@ -456,6 +467,7 @@ private:
 			return error;
 
 		_server = serverDeleter.Detach();
+		_debuggerInterface = debuggerInterfaceReference;
 		return B_OK;
 	}
 

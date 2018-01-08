@@ -11,6 +11,7 @@
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
 
+#include "ArchitectureFactory.h"
 #include "TargetHost.h"
 
 #include "debugger_interface/remote/MessageRemoteClientConnection.h"
@@ -184,21 +185,25 @@ status_t
 RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 	DebuggerInterface*& _interface) const
 {
+	if (teamID < 0 && threadID < 0)
+		return B_BAD_VALUE;
+
 	// send the request
-	ChannelMessenger::ChannelId channelId;
-	{
-		ObjectDeleter<AttachToTeamResponse> response;
-		status_t error = sendRequest(*fManagementConnection,
-			AttachToTeamRequest(teamID, threadID), response);
-		if (error != B_OK)
-			return error;
-		channelId = response->channel;
-	}
+	ObjectDeleter<AttachToTeamResponse> response;
+	status_t error = sendRequest(*fManagementConnection,
+		AttachToTeamRequest(teamID, threadID), response);
+	if (error != B_OK)
+		return error;
+	ChannelMessenger::ChannelId channelId = response->channel;
 
 	// get the architecture for the target team
-	Architecture* architecture = NULL;
-	// TODO:...
-	
+	Architecture* architecture;
+	error = ArchitectureFactory::CreateArchitecture(
+		response->architecture.String(), response->cpuFeatureFlags,
+		architecture);
+	if (error != B_OK)
+		return error;
+
 	// create the messenger for the channel
 	BReference<SingleChannelMessenger> messenger(
 			new(std::nothrow) SingleChannelMessenger(fMessenger.Get(),
@@ -219,43 +224,19 @@ RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 		return B_NO_MEMORY;
 
 	// create the debugger interface
-	// TODO:...
+	RemoteDebuggerInterface* debuggerInterface
+		= new(std::nothrow) RemoteDebuggerInterface(connection);
+	if (debuggerInterface == NULL)
+		return B_NO_MEMORY;
 
-//								RemoteDebuggerInterface(
-//									RemoteDebugClientConnection* connection);
-//	virtual	status_t			Init();
+	error = debuggerInterface->Init();
+	if (error != B_OK) {
+		delete debuggerInterface;
+		return error;
+	}
 
-
-
-// TODO:...
-	return B_NOT_SUPPORTED;
-
-//	if (teamID < 0 && threadID < 0)
-//		return B_BAD_VALUE;
-//
-//	status_t error;
-//	if (teamID < 0) {
-//		thread_info threadInfo;
-//		error = get_thread_info(threadID, &threadInfo);
-//		if (error != B_OK)
-//			return error;
-//
-//		teamID = threadInfo.team;
-//	}
-//
-//	LocalDebuggerInterface* interface
-//		= new(std::nothrow) LocalDebuggerInterface(teamID);
-//	if (interface == NULL)
-//		return B_NO_MEMORY;
-//
-//	BReference<DebuggerInterface> interfaceReference(interface, true);
-//	error = interface->Init();
-//	if (error != B_OK)
-//		return error;
-//
-//	_interface = interface;
-//	interfaceReference.Detach();
-//	return B_OK;
+	_interface = debuggerInterface;
+	return B_OK;
 }
 
 

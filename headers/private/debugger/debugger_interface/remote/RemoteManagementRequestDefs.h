@@ -33,7 +33,9 @@ DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
 	),
 	(
 		status_t, 	error,
-		uint64,		channel
+		uint64,		channel,
+		BString,	architecture,
+		uint32,		cpuFeatureFlags
 	)
 
 )

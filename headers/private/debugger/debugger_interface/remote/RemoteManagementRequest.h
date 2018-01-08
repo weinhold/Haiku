@@ -5,6 +5,7 @@
 #pragma once
 
 
+#include <String.h>
 #include <SupportDefs.h>
 
 #include "util/InspectableStruct.h"
@@ -69,6 +70,7 @@ struct StructInspector<RemoteManagementResponse>
 	virtual StructMemberInspector<int32>,
 	virtual StructMemberInspector<uint32>,
 	virtual StructMemberInspector<uint64>,
+	virtual StructMemberInspector<BString>,
 	virtual StructMemberInspector<BObjectList<TeamInfo> >
 {
 	virtual						~StructInspector();
@@ -84,6 +86,7 @@ struct ConstStructInspector<RemoteManagementResponse>
 	virtual StructMemberInspector<const int32>,
 	virtual StructMemberInspector<const uint32>,
 	virtual StructMemberInspector<const uint64>,
+	virtual StructMemberInspector<const BString>,
 	virtual StructMemberInspector<const BObjectList<TeamInfo> >
 {
 	virtual						~ConstStructInspector();

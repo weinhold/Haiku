@@ -104,6 +104,7 @@ struct ArchivingRemoteManagementResponseInspector
 	ArchivingRemoteManagementResponseMemberInspector<int32>,
 	ArchivingRemoteManagementResponseMemberInspector<uint32>,
 	ArchivingRemoteManagementResponseMemberInspector<uint64>,
+	ArchivingRemoteManagementResponseMemberInspector<BString>,
 	ArchivingRemoteManagementResponseMemberInspector<BObjectList<TeamInfo> >
 {
 	ArchivingRemoteManagementResponseInspector(
@@ -133,6 +134,7 @@ struct UnarchivingRemoteManagementResponseInspector
 	UnarchivingRemoteManagementResponseMemberInspector<int32>,
 	UnarchivingRemoteManagementResponseMemberInspector<uint32>,
 	UnarchivingRemoteManagementResponseMemberInspector<uint64>,
+	UnarchivingRemoteManagementResponseMemberInspector<BString>,
 	UnarchivingRemoteManagementResponseMemberInspector<BObjectList<TeamInfo> >
 {
 	UnarchivingRemoteManagementResponseInspector(
