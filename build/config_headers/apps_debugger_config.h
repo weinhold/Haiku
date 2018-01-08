@@ -40,5 +40,8 @@
 // trace GUI operations
 #define	APPS_DEBUGGER_TRACE_GUI					0
 
+// trace GUI operations
+#define	APPS_DEBUGGER_TRACE_REMOTE				0
+
 
 #endif	// APPS_DEBUGGER_CONFIG_H

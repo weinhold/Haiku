@@ -119,5 +119,13 @@
 #	define TRACE_GUI_ONLY(x)
 #endif
 
+#if APPS_DEBUGGER_TRACE_REMOTE
+#	define TRACE_REMOTE(x...)		fprintf(stderr, x)
+#	define TRACE_REMOTE_ONLY(x)	x
+#else
+#	define TRACE_REMOTE(x...)		(void)0
+#	define TRACE_REMOTE_ONLY(x)
+#endif
+
 
 #endif	// TRACING_H
