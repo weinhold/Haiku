@@ -432,7 +432,7 @@ struct StreamMessenger::Impl {
 		:
 		fLock(),
 		fTerminating(false),
-		fStream(NULL),
+		fStream(),
 		fDefaultChannel(NULL),
 		fReplyReader(-1),
 		fReplyWaiters(),
@@ -836,7 +836,7 @@ private:
 private:
 	pthread_mutex_t		fLock;
 	bool				fTerminating;
-	Stream*				fStream;
+	BReference<Stream>	fStream;
 	Channel*			fDefaultChannel;
 	thread_id			fReplyReader;
 	ReplyWaiterHashTable fReplyWaiters;
