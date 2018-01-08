@@ -2,8 +2,7 @@
  * Copyright 2010, Ingo Weinhold, ingo_weinhold@gmx.de.
  * Distributed under the terms of the MIT License.
  */
-#ifndef TITLE_PLACEHOLDER_MAPPER_H
-#define TITLE_PLACEHOLDER_MAPPER_H
+#pragma once
 
 
 #include "ActiveProcessInfo.h"
@@ -60,6 +59,3 @@ public:
 private:
 			int32				fTabIndex;
 };
-
-
-#endif	// TITLE_PLACEHOLDER_MAPPER_H

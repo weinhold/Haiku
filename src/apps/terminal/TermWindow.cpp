@@ -61,7 +61,7 @@
 #include "ShellParameters.h"
 #include "TermConst.h"
 #include "TermScrollView.h"
-#include "TitlePlaceholderMapper.h"
+#include "PlaceholderMappers.h"
 
 
 const static int32 kTermViewOffset = 3;

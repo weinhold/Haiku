@@ -4,7 +4,7 @@
  */
 
 
-#include "TitlePlaceholderMapper.h"
+#include "PlaceholderMappers.h"
 
 #include <Catalog.h>
 

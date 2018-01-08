@@ -19,6 +19,7 @@ Application Terminal :
 	HyperLink.cpp
 	InlineInput.cpp
 	PatternEvaluator.cpp
+	PlaceholderMappers.cpp
 	PrefHandler.cpp
 	PrefWindow.cpp
 	SetTitleDialog.cpp
@@ -37,7 +38,6 @@ Application Terminal :
 	TermViewHighlight.cpp
 	TermViewStates.cpp
 	TermWindow.cpp
-	TitlePlaceholderMapper.cpp
 	VTKeyTbl.c
 	VTPrsTbl.c
 	: be localestub tracker textencoding
