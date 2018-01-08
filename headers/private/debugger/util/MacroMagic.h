@@ -69,6 +69,248 @@
 	ITERATE2_N_IT2(macro, separator, a, b)			\
 	separator()										\
 	ITERATE2_N_IT4(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT8(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT6(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT10(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT8(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT12(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT10(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT14(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT12(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT16(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT14(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT18(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT16(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT20(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT18(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT22(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT20(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT24(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT22(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT26(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT24(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT28(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT26(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT30(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT28(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT32(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT30(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT34(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT32(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT36(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT34(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT38(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT36(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT40(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT38(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT42(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT40(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT44(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT42(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT46(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT44(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT48(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT46(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT50(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT48(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT52(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT50(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT54(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT52(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT56(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT54(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT58(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT56(macro, separator, __VA_ARGS__)
+#define ITERATE2_N_IT60(macro, separator, a, b,...)	\
+	ITERATE2_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_N_IT58(macro, separator, __VA_ARGS__)
+
+
+/*!	Functionally identical to ITERATE2(). This macro can be used when two levels
+	of iteration need to be nested (ITERATE2_OUTER(ITERATE2(...), ...)).
+ */
+#define ITERATE2_OUTER(macro, separator, ...) \
+	ITERATE2_OUTER_N(macro, separator, COUNT_MACRO_ARGS(__VA_ARGS__), \
+		__VA_ARGS__)
+
+#define ITERATE2_OUTER_N(macro, separator, count, ...) \
+	ITERATE2_OUTER_N_IMPL(macro, separator, count, __VA_ARGS__)
+
+#define ITERATE2_OUTER_N_IMPL(macro, separator, count, ...) \
+ 	ITERATE2_OUTER_N_IT##count(macro, separator, __VA_ARGS__)
+
+#define ITERATE2_OUTER_N_IT1(macro, separator, dummy)
+#define ITERATE2_OUTER_N_IT2(macro, separator, a, b) \
+	macro(a, b)
+#define ITERATE2_OUTER_N_IT4(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT2(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT6(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT4(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT8(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT6(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT10(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT8(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT12(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT10(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT14(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT12(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT16(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT14(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT18(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT16(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT20(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT18(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT22(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT20(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT24(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT22(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT26(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT24(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT28(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT26(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT30(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT28(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT32(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT30(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT34(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT32(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT36(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT34(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT38(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT36(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT40(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT38(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT42(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT40(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT44(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT42(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT46(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT44(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT48(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT46(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT50(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT48(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT52(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT50(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT54(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT52(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT56(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT54(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT58(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT56(macro, separator, __VA_ARGS__)
+#define ITERATE2_OUTER_N_IT60(macro, separator, a, b,...)	\
+	ITERATE2_OUTER_N_IT2(macro, separator, a, b)			\
+	separator()										\
+	ITERATE2_OUTER_N_IT58(macro, separator, __VA_ARGS__)
 
 
 /*!	Iterates through the 3rd to nth macro arguments applying \a macro to triples
