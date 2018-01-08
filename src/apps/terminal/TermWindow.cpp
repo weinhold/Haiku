@@ -547,15 +547,7 @@ status_t
 TermWindow::_GetWindowPositionFile(BFile* file, uint32 openMode)
 {
 	BPath path;
-	status_t status = find_directory(B_USER_SETTINGS_DIRECTORY, &path, true);
-	if (status != B_OK)
-		return status;
-
-	status = path.Append("Terminal");
-	if (status != B_OK)
-		return status;
-
-	status = path.Append("Windows");
+	status_t status = PrefHandler::GetPath("Windows", path);
 	if (status != B_OK)
 		return status;
 
