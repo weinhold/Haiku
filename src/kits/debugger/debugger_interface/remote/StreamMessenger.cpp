@@ -90,16 +90,20 @@ struct Waiter : DoublyLinkedListLinkImpl<ActualClass> {
 	Waiter()
 		:
 		fCondition(NULL),
-		fNotified(false)
+		fNotified(false),
+		fNotifyStatus(B_OK)
 	{
 	}
 
-	void Notify()
+	void Notify(status_t status)
 	{
 		assert(fCondition != NULL);
 
-		fNotified = true;
-		pthread_cond_broadcast(fCondition);
+		if (!fNotified) {
+			fNotified = true;
+			fNotifyStatus = status;
+			pthread_cond_broadcast(fCondition);
+		}
 	}
 
 	status_t Wait(pthread_mutex_t& mutex, bigtime_t timeout)
@@ -144,7 +148,7 @@ private:
 
 			// Regardless of the error. If notified, things are good.
 			if (fNotified)
-				return B_OK;
+				return fNotifyStatus;
 
 			if (error != B_OK) {
 				if (error == B_INTERRUPTED)
@@ -157,6 +161,7 @@ private:
 private:
 	pthread_cond_t*	fCondition;
 	bool			fNotified;
+	status_t		fNotifyStatus;
 };
 
 
@@ -168,18 +173,18 @@ struct WaiterQueue {
 	{
 	}
 
-	Waiter* NotifyOne()
+	Waiter* NotifyOne(status_t status)
 	{
 		Waiter* waiter = fWaiters.RemoveHead();
 		if (waiter != NULL)
-			waiter->Notify();
+			waiter->Notify(status);
 
 		return waiter;
 	}
 
-	void NotifyAll()
+	void NotifyAll(status_t status)
 	{
-		while (NotifyOne()) {
+		while (NotifyOne(status)) {
 		}
 	}
 
@@ -289,7 +294,7 @@ struct BlockingMessageQueue {
 	void Close()
 	{
 		fClosed = true;
-		fWaiters.NotifyAll();
+		fWaiters.NotifyAll(B_CANCELED);
 	}
 
 	bool IsClosed() const
@@ -302,7 +307,7 @@ struct BlockingMessageQueue {
 	*/
 	bool AppendMessage(Message* message)
 	{
-		if (MessageWaiter* waiter = fWaiters.NotifyOne()) {
+		if (MessageWaiter* waiter = fWaiters.NotifyOne(B_OK)) {
 			waiter->SetMessage(message);
 			return false;
 		}
@@ -686,7 +691,7 @@ private:
 			for (ReplyWaiterHashTable::Iterator it
 						= fReplyWaiters.GetIterator();
 					ReplyWaiter* waiter = it.Next();) {
-				waiter->Notify();
+				waiter->Notify(B_CANCELED);
 			}
 			fReplyWaiters.Clear();
 		}
@@ -811,7 +816,7 @@ private:
 
 		waiter->SetMessage(message);
 		fReplyWaiters.Remove(waiter);
-		waiter->Notify();
+		waiter->Notify(B_OK);
 	}
 
 	// fLock must be held
