@@ -24,9 +24,10 @@
 #include "Team.h"
 
 
-Architecture::Architecture(uint8 addressSize, size_t debugCpuStateSize,
-	bool bigEndian)
+Architecture::Architecture(const char* name, uint8 addressSize,
+	size_t debugCpuStateSize, bool bigEndian)
 	:
+	fName(name),
 	fAddressSize(addressSize),
 	fDebugCpuStateSize(debugCpuStateSize),
 	fBigEndian(bigEndian)

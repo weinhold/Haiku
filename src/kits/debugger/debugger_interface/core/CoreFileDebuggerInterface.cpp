@@ -13,8 +13,8 @@
 
 #include <AutoDeleter.h>
 
+#include "ArchitectureFactory.h"
 #include "ArchitectureX86.h"
-#include "ArchitectureX8664.h"
 #include "CoreFile.h"
 #include "ElfSymbolLookup.h"
 #include "ImageInfo.h"
@@ -51,21 +51,16 @@ CoreFileDebuggerInterface::Init()
 			// TODO: Determine the actual feature flags!
 			uint32 featureFlags = X86_CPU_FEATURE_FLAG_MMX
 				| X86_CPU_FEATURE_FLAG_SSE;
-			fArchitecture = new(std::nothrow) ArchitectureX86(featureFlags);
-			break;
+			return ArchitectureFactory::CreateArchitectureX86(featureFlags,
+				fArchitecture);
 		}
 		case EM_X86_64:
-			fArchitecture = new(std::nothrow) ArchitectureX8664();
-			break;
+			return ArchitectureFactory::CreateArchitectureX8664(0,
+				fArchitecture);
 		default:
 			WARNING("Unsupported core file machine (%u)\n", machine);
 			return B_UNSUPPORTED;
 	}
-
-	if (fArchitecture == NULL)
-		return B_NO_MEMORY;
-
-	return fArchitecture->Init();
 }
 
 

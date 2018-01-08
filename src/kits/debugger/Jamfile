@@ -92,6 +92,8 @@ local sources =
 
 	# arch
 	Architecture.cpp
+	ArchitectureFactory.cpp
+	ArchitectureNames.cpp
 	CpuState.cpp
 	InstructionInfo.cpp
 	Register.cpp

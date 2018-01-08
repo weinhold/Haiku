@@ -14,6 +14,7 @@
 
 #include <AutoDeleter.h>
 
+#include "ArchitectureNames.h"
 #include "CfaContext.h"
 #include "CpuStateX8664.h"
 #include "DisassembledCode.h"
@@ -142,9 +143,10 @@ struct ArchitectureX8664::FromDwarfRegisterMap : RegisterMap {
 // #pragma mark - ArchitectureX8664
 
 
-ArchitectureX8664::ArchitectureX8664()
+ArchitectureX8664::ArchitectureX8664(uint32 /*featureFlags*/)
 	:
-	Architecture(8, sizeof(x86_64_debug_cpu_state), false),
+	Architecture(kArchitectureNameX8664, 8, sizeof(x86_64_debug_cpu_state),
+		false),
 	fAssemblyLanguage(NULL),
 	fToDwarfRegisterMap(NULL),
 	fFromDwarfRegisterMap(NULL)

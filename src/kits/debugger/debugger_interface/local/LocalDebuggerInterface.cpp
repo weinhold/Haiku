@@ -21,8 +21,8 @@
 
 #include "debug_utils.h"
 
+#include "ArchitectureFactory.h"
 #include "ArchitectureX86.h"
-#include "ArchitectureX8664.h"
 #include "AreaInfo.h"
 #include "AutoDeleter.h"
 #include "CpuState.h"
@@ -836,22 +836,14 @@ LocalDebuggerInterface::_CreateArchitecture()
 	if ((info.eax_1.features & IA32_FEATURE_SSE) != 0)
 		featureFlags |= X86_CPU_FEATURE_FLAG_SSE;
 
-	fArchitecture = new(std::nothrow) ArchitectureX86(featureFlags);
+	return ArchitectureFactory::CreateArchitectureX86(featureFlags,
+		fArchitecture);
 
 #elif defined(ARCH_x86_64)
-	fArchitecture = new(std::nothrow) ArchitectureX8664();
+	return ArchitectureFactory::CreateArchitectureX8664(fArchitecture);
 #else
 	return B_UNSUPPORTED;
 #endif
-
-	if (fArchitecture == NULL)
-		return B_NO_MEMORY;
-
-	error = fArchitecture->Init();
-	if (error != B_OK)
-		return error;
-
-	return B_OK;
 }
 
 

@@ -49,13 +49,15 @@ enum {
 
 class Architecture : public BReferenceable {
 public:
-								Architecture(uint8 addressSize,
-									size_t debugCpuStateSize,
+								Architecture(const char* name,
+									uint8 addressSize, size_t debugCpuStateSize,
 									bool bigEndian);
 
 	virtual						~Architecture();
 
 	virtual	status_t			Init();
+
+	inline	const char*			Name() const			{ return fName; }
 
 	inline	uint8				AddressSize() const		{ return fAddressSize; }
 	inline	size_t				DebugCpuStateSize() const
@@ -144,6 +146,7 @@ public:
 
 
 protected:
+			const char*			fName;
 			uint8				fAddressSize;
 			size_t				fDebugCpuStateSize;
 			bool				fBigEndian;

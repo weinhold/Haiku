@@ -11,8 +11,7 @@
 
 #include <AutoDeleter.h>
 
-#include "ArchitectureX86.h"
-#include "ArchitectureX8664.h"
+#include "Architecture.h"
 #include "debugger_interface/remote/RemoteClientConnection.h"
 #include "debugger_interface/remote/RemoteDebugRequests.h"
 

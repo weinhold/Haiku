@@ -19,7 +19,7 @@ class SourceLanguage;
 
 class ArchitectureX8664 : public Architecture {
 public:
-								ArchitectureX8664();
+								ArchitectureX8664(uint32 featureFlags = 0);
 	virtual						~ArchitectureX8664();
 
 	virtual	status_t			Init();

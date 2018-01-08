@@ -13,6 +13,7 @@
 
 #include <AutoDeleter.h>
 
+#include "ArchitectureNames.h"
 #include "CfaContext.h"
 #include "CpuStateX86.h"
 #include "DisassembledCode.h"
@@ -123,7 +124,7 @@ struct ArchitectureX86::FromDwarfRegisterMap : RegisterMap {
 
 ArchitectureX86::ArchitectureX86(uint32 featureFlags)
 	:
-	Architecture(4, sizeof(x86_debug_cpu_state), false),
+	Architecture(kArchitectureNameX86, 4, sizeof(x86_debug_cpu_state), false),
 	fFeatureFlags(featureFlags),
 	fAssemblyLanguage(NULL),
 	fToDwarfRegisterMap(NULL),
