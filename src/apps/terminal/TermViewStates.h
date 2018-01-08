@@ -170,6 +170,10 @@ private:
 			class PopUpMenu;
 
 private:
+			template<typename MenuBuilder>
+			void				_AddCustomCommands(MenuBuilder& menuBuilder);
+
+private:
 			HyperLink			fLink;
 };
 

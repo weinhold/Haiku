@@ -33,8 +33,13 @@
 #include <Window.h>
 
 #include <Array.h>
+#include <AutoDeleter.h>
+#include <DriverSettings.h>
 
 #include "ActiveProcessInfo.h"
+#include "PatternEvaluator.h"
+#include "PlaceholderMappers.h"
+#include "PrefHandler.h"
 #include "Shell.h"
 #include "TermConst.h"
 #include "TerminalBuffer.h"
@@ -59,6 +64,7 @@ static const uint32 kMessageOpenLink = 'OLnk';
 static const uint32 kMessageCopyLink = 'CLnk';
 static const uint32 kMessageCopyAbsolutePath = 'CAbs';
 static const uint32 kMessageMenuClosed = 'MClo';
+static const uint32 kMessageCustomCommand = 'CCmd';
 
 
 static const char* const kKnownURLProtocols = "http:https:ftp:mailto";
@@ -1052,6 +1058,8 @@ TermView::HyperLinkMenuState::Prepare(BPoint point, const HyperLink& link)
 				menuBuilder.AddItem(B_TRANSLATE("Copy absolute path"),
 					kMessageCopyAbsolutePath);
 			}
+
+			_AddCustomCommands(menuBuilder);
 			break;
 	}
 	menu->SetTargetForItems(fView);
@@ -1098,10 +1106,90 @@ TermView::HyperLinkMenuState::MessageReceived(BMessage* message)
 			return true;
 		}
 
+		case kMessageCustomCommand:
+		{
+			BString commandPattern;
+			if (message->FindString("command", &commandPattern) != B_OK)
+				return true;
+
+			// get the active process info
+			ActiveProcessInfo activeProcessInfo;
+			if (!fView->GetActiveProcessInfo(activeProcessInfo))
+				return true;
+
+			// adjust pattern: change CWD and always start in the background
+			commandPattern = BString("cd %d; ") << commandPattern << " &";
+
+			// evaluate the command pattern
+			HyperLinkCommandPlaceholderMapper placeHolderMapper(
+				activeProcessInfo, fLink.Address());
+			BString command = PatternEvaluator::Evaluate(commandPattern,
+				placeHolderMapper);
+
+			// run the command
+			system(command.String());
+
+			return true;
+		}
+
 		case kMessageMenuClosed:
 			fView->_NextState(fView->fDefaultState);
 			return true;
 	}
 
 	return false;
+}
+
+
+template<typename MenuBuilder>
+void
+TermView::HyperLinkMenuState::_AddCustomCommands(MenuBuilder& menuBuilder)
+{
+	// We only support paths ATM.
+	switch (fLink.GetType()) {
+		case HyperLink::TYPE_URL:
+			return;
+		case HyperLink::TYPE_PATH:
+		case HyperLink::TYPE_PATH_WITH_LINE:
+		case HyperLink::TYPE_PATH_WITH_LINE_AND_COLUMN:
+			break;
+	}
+
+	// load the settings file and iterate through the CustomCommand entries
+	BPath path;
+	if (PrefHandler::GetPath("HyperLinkCommands", path) != B_OK)
+		return;
+
+	BDriverSettings driverSettings;
+	if (driverSettings.Load(path.Path()) != B_OK)
+		return;
+
+	bool first = true;
+	BDriverParameterIterator it
+		= driverSettings.ParameterIterator("CustomCommand");
+	while (it.HasNext()) {
+		BDriverParameter commandParameter = it.Next();
+		const char* label = commandParameter.GetParameterValue("label");
+		const char* command = commandParameter.GetParameterValue("command");
+
+		if (label != NULL && command != NULL) {
+			// add a separator before the first item
+			if (first)
+				menuBuilder.AddSeparator();
+			else
+				first = false;
+
+			// add the menu item
+			BMessage* message = new BMessage(kMessageCustomCommand);
+			if (message == NULL)
+				return;
+			ObjectDeleter<BMessage> messageDeleter(message);
+
+			if (message->AddString("command", command) != B_OK)
+				return; 
+
+			menuBuilder.AddItem(label, message);
+			messageDeleter.Detach();
+		}
+	}
 }

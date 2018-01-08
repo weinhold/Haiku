@@ -59,3 +59,20 @@ public:
 private:
 			int32				fTabIndex;
 };
+
+
+class HyperLinkCommandPlaceholderMapper
+	: public PatternEvaluator::PlaceholderMapper {
+public:
+								HyperLinkCommandPlaceholderMapper(
+									const ActiveProcessInfo& processInfo,
+									const BString& filePath);
+
+	virtual	bool				MapPlaceholder(char placeholder,
+									int64 number, bool numberGiven,
+									BString& _string);
+
+private:
+			ActiveProcessInfo	fProcessInfo;
+			BString				fFilePath;
+};

@@ -4,7 +4,7 @@ SetSubDirSupportedPlatformsBeOSCompatible ;
 
 UseHeaders [ FDirName $(HAIKU_TOP) src kits tracker ] ;
 
-UsePrivateHeaders libroot kernel shared system ;
+UsePrivateHeaders libroot kernel shared storage system ;
 UsePrivateHeaders textencoding ;
 
 Application Terminal :

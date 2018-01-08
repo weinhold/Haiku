@@ -141,3 +141,37 @@ TabTitlePlaceholderMapper::MapPlaceholder(char placeholder, int64 number,
 	return TitlePlaceholderMapper::MapPlaceholder(placeholder, number,
 		numberGiven, _string);
 }
+
+
+// #pragma mark - HyperLinkCommandPlaceholderMapper
+
+
+HyperLinkCommandPlaceholderMapper::HyperLinkCommandPlaceholderMapper(
+	const ActiveProcessInfo& processInfo, const BString& filePath)
+	:
+	fProcessInfo(processInfo),
+	fFilePath(filePath)
+{
+}
+
+
+bool
+HyperLinkCommandPlaceholderMapper::MapPlaceholder(char placeholder,
+	int64 /*number*/, bool /*numberGiven*/, BString& _string)
+{
+	switch (placeholder) {
+		case 'd':
+			// current working directory
+			_string = fProcessInfo.CurrentDirectory();
+			_string.CharacterEscape(kShellEscapeCharacters, '\\');
+			return true;
+
+		case 'f':
+			// file path
+			_string = fFilePath;
+			_string.CharacterEscape(kShellEscapeCharacters, '\\');
+			return true;
+	}
+
+	return false;
+}
