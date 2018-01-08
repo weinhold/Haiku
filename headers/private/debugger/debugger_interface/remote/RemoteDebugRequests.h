@@ -26,8 +26,8 @@
 
 #define DEFINE_REQUEST_AND_RESPONSE_STRUCTS(...)	\
 	ITERATE3(DECLARE_REQUEST_AND_RESPONSE_STRUCT, DEFINE_EMPTY, __VA_ARGS__) \
-	DECLARE_VISITOR(RemoteDebugRequestVisitor, Request, __VA_ARGS__)		\
-	DECLARE_VISITOR(RemoteDebugResponseVisitor, Response, __VA_ARGS__)		\
+	DECLARE_VISITOR3(RemoteDebugRequestVisitor, Request, __VA_ARGS__)		\
+	DECLARE_VISITOR3(RemoteDebugResponseVisitor, Response, __VA_ARGS__)		\
 	ITERATE3(DEFINE_REQUEST_AND_RESPONSE_STRUCT, DEFINE_EMPTY, __VA_ARGS__)
 
 /*!	Defines a request struct.
@@ -57,13 +57,10 @@
 #include "debugger_interface/remote/RemoteDebugRequestDefs.h"
 
 
-// defined in RemoteInspectableStructMacros.h
-#undef DECLARE_REQUEST_AND_RESPONSE_STRUCT
-#undef DECLARE_VISITOR
-#undef DECLARE_VISIT_METHOD_Request
-#undef DECLARE_VISIT_METHOD_Response
-#undef DEFINE_REQUEST_AND_RESPONSE_STRUCT
+// undefine macros defined in RemoteInspectableStructMacros.h
+#include "debugger_interface/remote/RemoteInspectableStructMacrosUndefine.h"
 
+// undefine macros defined here
 #undef DEFINE_REQUEST_AND_RESPONSE_STRUCTS
 #undef DEFINE_REQUEST_STRUCT
 #undef DEFINE_REPLY_STRUCT

@@ -9,7 +9,16 @@
 	struct name ## Request;											\
 	struct name ## Response;
 
-#define DECLARE_VISITOR(name, type, ...)									\
+#define DECLARE_EVENT_STRUCT(name, fields)							\
+	struct name ## Event;
+
+#define DECLARE_VISITOR2(name, type, ...)									\
+	struct name {															\
+		virtual ~name() {}													\
+		ITERATE2(DECLARE_VISIT_METHOD_ ## type, DEFINE_EMPTY, __VA_ARGS__)	\
+	};
+
+#define DECLARE_VISITOR3(name, type, ...)									\
 	struct name {															\
 		virtual ~name() {}													\
 		ITERATE3(DECLARE_VISIT_METHOD_ ## type, DEFINE_EMPTY, __VA_ARGS__)	\
@@ -19,6 +28,8 @@
 	virtual void Visit(name ## Request* request) = 0;
 #define DECLARE_VISIT_METHOD_Response(name, requestFields, responseFields)		\
 	virtual void Visit(name ## Response* response) = 0;
+#define DECLARE_VISIT_METHOD_Event(name, fields)		\
+	virtual void Visit(name ## Event* event) = 0;
 
 #define DEFINE_REQUEST_AND_RESPONSE_STRUCT(name, requestFields,		\
 		responseFields)												\

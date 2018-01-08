@@ -18,7 +18,15 @@ DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
 		uint32,		protocolVersion
 	),
 
-	DebugTeam,
+	GetTeams,
+	(
+	),
+	(
+		status_t, 				error,
+		BObjectList<TeamInfo>,	infos
+	),
+
+	AttachToTeam,
 	(
 		int32,		teamId,
 		int32,		threadId

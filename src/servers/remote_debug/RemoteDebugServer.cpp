@@ -24,6 +24,7 @@
 #include <debugger_interface/remote/RemoteManagementRequests.h>
 #include <debugger_interface/remote/SingleChannelMessenger.h>
 #include <debugger_interface/remote/StreamMessenger.h>
+#include <TargetHost.h>
 
 #include "DebuggerInterfaceServer.h"
 
@@ -161,12 +162,15 @@ parse_arguments(int argc, const char* const* argv, bool noOutput,
 
 struct RemoteDebugServer : private TargetHostInterfaceRoster::Listener,
 	private DebuggerInterfaceServer::Listener,
+	private TargetHost::Listener,
 	private RemoteManagementRequestVisitor {
 	RemoteDebugServer()
 		:
 		TargetHostInterfaceRoster::Listener(),
 		DebuggerInterfaceServer::Listener(),
 		fLock("servers"),
+		fHostInterface(NULL),
+		fHost(NULL),
 		fStreamMessenger(),
 		fManagementConnection(),
 		fServers(),
@@ -211,6 +215,11 @@ private:
 		error = fLock.InitCheck();
 		if (error != B_OK)
 			return error;
+
+		fHostInterface
+			= TargetHostInterfaceRoster::Default()->ActiveInterfaceAt(0);
+		fHost = fHostInterface->GetTargetHost();
+		fHost->AddListener(this);
 
 		BReference<Stream> stream(new(std::nothrow) FdStream(0, 1), true);
 		if (stream == NULL)
@@ -303,6 +312,23 @@ private:
 		fFinishedServers.Add(server);
 	}
 
+private:
+	// TargetHost::Listener
+
+	virtual void TeamAdded(const TeamInfo& info)
+	{
+		fManagementConnection->SendEvent(TeamAddedEvent(info));
+	}
+
+	virtual void TeamRemoved(team_id team)
+	{
+		fManagementConnection->SendEvent(TeamRemovedEvent(team));
+	}
+
+	virtual void TeamRenamed(const TeamInfo& info)
+	{
+		fManagementConnection->SendEvent(TeamRenamedEvent(info));
+	}
 
 private:
 	// RemoteManagementRequestVisitor
@@ -313,7 +339,36 @@ private:
 		throw status_t(B_UNSUPPORTED);
 	}
 
-	virtual void Visit(DebugTeamRequest* request)
+	virtual void Visit(GetTeamsRequest* request)
+	{
+		// prepare the response
+		GetTeamsResponse response;
+		response.error = B_OK;
+
+		response.infos.SetOwning(true);
+
+		// We hold the TargetHost lock until we've sent the response. This
+		// ensures that events we get after we have retrieved the list of
+		// running teams won't be sent before the response is sent.
+		AutoLocker<TargetHost> hostLocker(fHost);
+
+		int32 count = fHost->CountTeams();
+		for (int32 i = 0; i < count; i++) {
+			TeamInfo* info = fHost->TeamInfoAt(i);
+			TeamInfo* clonedInfo = new(std::nothrow) TeamInfo(*info);
+			if (clonedInfo == NULL || !response.infos.AddItem(clonedInfo)) {
+				delete clonedInfo;
+				response.infos.MakeEmpty();
+				response.error = B_NO_MEMORY;
+				break;
+			}
+		}
+
+		// send the response
+		fManagementConnection->SendResponse(fCurrentRequestId, response);
+	}
+
+	virtual void Visit(AttachToTeamRequest* request)
 	{
 		// create a new channel
 		ChannelId channelId;
@@ -322,14 +377,14 @@ private:
 		// start the debugger interface server
 		ObjectDeleter<DebuggerInterfaceServer> serverDeleter;
 		if (requestError == B_OK) {
-			requestError = _DebugTeam(channelId, request->teamId,
+			requestError = _AttachToTeam(channelId, request->teamId,
 				request->threadId, serverDeleter);
 			if (requestError != B_OK)
 				fStreamMessenger->DeleteChannel(channelId);
 		}
 
 		// send the response
-		DebugTeamResponse response(requestError, channelId);
+		AttachToTeamResponse response(requestError, channelId);
 		status_t error = fManagementConnection->SendResponse(fCurrentRequestId,
 			response);
 		if (error != B_OK)
@@ -359,15 +414,12 @@ private:
 	typedef DoublyLinkedList<DebuggerInterfaceServer> ServerList;
 
 private:
-
-	status_t _DebugTeam(ChannelId channelId, team_id teamId, thread_id threadId,
-		ObjectDeleter<DebuggerInterfaceServer>& _server)
+	status_t _AttachToTeam(ChannelId channelId, team_id teamId,
+		thread_id threadId, ObjectDeleter<DebuggerInterfaceServer>& _server)
 	{
 		// create the debugger interface
-		TargetHostInterface* hostInterface
-			= TargetHostInterfaceRoster::Default()->ActiveInterfaceAt(0);
 		DebuggerInterface* debuggerInterface;
-		status_t error = hostInterface->Attach(teamId, threadId,
+		status_t error = fHostInterface->Attach(teamId, threadId,
 			debuggerInterface);
 		if (error != B_OK)
 			return error;
@@ -409,6 +461,8 @@ private:
 
 private:
 	BLocker								fLock;
+	TargetHostInterface*				fHostInterface;
+	TargetHost*							fHost;
 	BReference<StreamMessenger>			fStreamMessenger;
 	BReference<ManagementConnection>	fManagementConnection;
 	ServerList							fServers;

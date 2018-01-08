@@ -11,14 +11,22 @@
 #include "util/StructInspector.h"
 
 
-struct RemoteManagementEvent : InspectableStruct<RemoteManagementEvent> {};
+struct RemoteManagementEventVisitor;
+class TeamInfo;
+
+
+struct RemoteManagementEvent : InspectableStruct<RemoteManagementEvent> {
+	virtual	void				AcceptVisitor(
+									RemoteManagementEventVisitor* visitor) = 0;
+};
 
 
 template<>
 struct StructInspector<RemoteManagementEvent>
 	:
 	StructInspectorBase<RemoteManagementEvent>,
-	virtual StructMemberInspector<bool>
+	virtual StructMemberInspector<int32>,
+	virtual StructMemberInspector<TeamInfo>
 {
 	virtual						~StructInspector();
 };
@@ -30,7 +38,8 @@ template<>
 struct ConstStructInspector<RemoteManagementEvent>
 	:
 	ConstStructInspectorBase<RemoteManagementEvent>,
-	virtual StructMemberInspector<const bool>
+	virtual StructMemberInspector<const int32>,
+	virtual StructMemberInspector<const TeamInfo>
 {
 	virtual						~ConstStructInspector();
 };

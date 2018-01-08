@@ -98,6 +98,12 @@ private:
 #define REGISTER_RESPONSE_INFO(name, requestFields,	responseFields)	\
 	RegisterInfo<name ## Response>();
 
+#define REGISTER_EVENT_INFOS(...) \
+	ITERATE2_OUTER(REGISTER_EVENT_INFO, DEFINE_EMPTY, __VA_ARGS__)
+
+#define REGISTER_EVENT_INFO(name, eventFields)	\
+	RegisterInfo<name ## Event>();
+
 
 template<typename DerivedType, typename Context, typename Value>
 struct ArchivingStructMemberInspector : virtual StructMemberInspector<Value> {

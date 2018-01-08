@@ -103,7 +103,8 @@ struct ArchivingRemoteManagementResponseInspector
 		RemoteManagementFactoryContext>,
 	ArchivingRemoteManagementResponseMemberInspector<int32>,
 	ArchivingRemoteManagementResponseMemberInspector<uint32>,
-	ArchivingRemoteManagementResponseMemberInspector<uint64>
+	ArchivingRemoteManagementResponseMemberInspector<uint64>,
+	ArchivingRemoteManagementResponseMemberInspector<BObjectList<TeamInfo> >
 {
 	ArchivingRemoteManagementResponseInspector(
 		const RemoteManagementFactoryContext& context,
@@ -131,7 +132,8 @@ struct UnarchivingRemoteManagementResponseInspector
 		RemoteManagementFactoryContext>,
 	UnarchivingRemoteManagementResponseMemberInspector<int32>,
 	UnarchivingRemoteManagementResponseMemberInspector<uint32>,
-	UnarchivingRemoteManagementResponseMemberInspector<uint64>
+	UnarchivingRemoteManagementResponseMemberInspector<uint64>,
+	UnarchivingRemoteManagementResponseMemberInspector<BObjectList<TeamInfo> >
 {
 	UnarchivingRemoteManagementResponseInspector(
 		const RemoteManagementFactoryContext& context,
@@ -172,7 +174,8 @@ struct ArchivingRemoteManagementEventInspector
 	:
 	ArchivingRemoteDataInspector<RemoteManagementEvent,
 		RemoteManagementFactoryContext>,
-	ArchivingRemoteManagementEventMemberInspector<bool>
+	ArchivingRemoteManagementEventMemberInspector<int32>,
+	ArchivingRemoteManagementEventMemberInspector<TeamInfo>
 {
 	ArchivingRemoteManagementEventInspector(
 		const RemoteManagementFactoryContext& context,
@@ -198,7 +201,8 @@ struct UnarchivingRemoteManagementEventInspector
 	:
 	UnarchivingRemoteDataInspector<RemoteManagementEvent,
 		RemoteManagementFactoryContext>,
-	UnarchivingRemoteManagementEventMemberInspector<bool>
+	UnarchivingRemoteManagementEventMemberInspector<int32>,
+	UnarchivingRemoteManagementEventMemberInspector<TeamInfo>
 {
 	UnarchivingRemoteManagementEventInspector(
 		const RemoteManagementFactoryContext& context,
@@ -215,7 +219,10 @@ struct RemoteDataFactory<RemoteManagementEvent>
 		: RemoteDataFactoryBase<RemoteManagementEvent> {
 	RemoteDataFactory()
 	{
-// 		RegisterInfo<HelloRequest>();
+		#define DEFINE_EVENT_STRUCTS(...)	\
+			REGISTER_EVENT_INFOS(__VA_ARGS__)
+		#include "debugger_interface/remote/RemoteManagementEventDefs.h"
+		#undef DEFINE_EVENT_STRUCTS
 	}
 };
 

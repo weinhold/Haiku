@@ -1,0 +1,364 @@
+/*
+ * Copyright 2017, Ingo Weinhold, ingo_weinhold@gmx.de.
+ * Distributed under the terms of the MIT License.
+ */
+
+
+#include "RemoteTargetHostInterface.h"
+
+#include <stdio.h>
+
+#include <AutoDeleter.h>
+#include <AutoLocker.h>
+
+#include "TargetHost.h"
+
+#include "debugger_interface/remote/MessageRemoteClientConnection.h"
+#include "debugger_interface/remote/RemoteDebugFactoryContext.h"
+#include "debugger_interface/remote/RemoteDebuggerInterface.h"
+#include "debugger_interface/remote/RemoteManagementEvents.h"
+#include "debugger_interface/remote/RemoteManagementFactoryContext.h"
+#include "debugger_interface/remote/RemoteManagementRequests.h"
+#include "debugger_interface/remote/SingleChannelMessenger.h"
+#include "debugger_interface/remote/StreamMessenger.h"
+
+
+namespace {
+
+
+template<typename RequestType>
+status_t
+sendRequest(RemoteManagementClientConnection& connection,
+		const RequestType& request,
+		ObjectDeleter<typename RemoteResponse<RequestType>::Type>& _response)
+{
+	typedef typename RemoteResponse<RequestType>::Type ResponseType;
+
+	// send request with response
+	RemoteManagementResponse* response;
+	status_t error = connection.SendRequest(request, response);
+	if (error != B_OK)
+		return error;
+	ObjectDeleter<RemoteManagementResponse> responseDeleter(response);
+
+	// check response type
+	ResponseType* concreteResponse = dynamic_cast<ResponseType*>(response);
+	if (concreteResponse == NULL)
+		return B_BAD_DATA;
+
+	// check the response error
+	if (concreteResponse->error != B_OK)
+		return concreteResponse->error;
+
+	_response = concreteResponse;
+	responseDeleter.Detach();
+	return B_OK;
+}
+
+
+} // anonymous namespace
+
+
+RemoteTargetHostInterface::RemoteTargetHostInterface()
+	:
+	TargetHostInterface(),
+	fManagementConnection(),
+	fTargetHost(NULL),
+	fEventThread(-1),
+	fConnected(false)
+{
+	SetName("Remote");
+}
+
+
+RemoteTargetHostInterface::~RemoteTargetHostInterface()
+{
+	Close();
+
+	if (fTargetHost != NULL)
+		fTargetHost->ReleaseReference();
+}
+
+
+status_t
+RemoteTargetHostInterface::Init(const BString& connectionName, Stream* stream)
+{
+	fTargetHost = new(std::nothrow) TargetHost(connectionName);
+	if (fTargetHost == NULL)
+		return B_NO_MEMORY;
+
+	// create connection
+	BReference<StreamMessenger> messenger = new(std::nothrow) StreamMessenger;
+	if (messenger == NULL)
+		return B_NO_MEMORY;
+
+	status_t error = messenger->SetTo(stream);
+	if (error != B_OK)
+		return error;
+
+	fMessenger = messenger;
+
+	fManagementConnection = new(std::nothrow) MessageRemoteClientConnection<
+			RemoteManagementRequest, RemoteManagementResponse,
+			RemoteManagementEvent, RemoteManagementFactoryContext>(
+			RemoteManagementFactoryContext(), messenger.Get());
+	if (fManagementConnection == NULL)
+		return B_NO_MEMORY;
+
+	// send the Hello request
+	{
+		HelloRequest request(kRemoteManagementProtocolVersion);
+		ObjectDeleter<HelloResponse> response;
+		error = sendRequest(*fManagementConnection, request, response);
+		if (error != B_OK)
+			return error;
+
+		if (request.protocolVersion != kRemoteManagementProtocolVersion)
+			return B_MISMATCHED_VALUES;
+	}
+
+	// send a GetTeams request
+	{
+		ObjectDeleter<GetTeamsResponse> response;
+		error = sendRequest(*fManagementConnection, GetTeamsRequest(),
+			response);
+		if (error != B_OK)
+			return error;
+
+		for (int32 i = 0; TeamInfo* info = response->infos.ItemAt(i); i++)
+			fTargetHost->AddTeam(*info);
+	}
+
+	// spawn thread for receiving management events
+	fEventThread = spawn_thread(_EventHandlerEntry, "Remote Target Host Loop",
+		B_NORMAL_PRIORITY, this);
+	if (fEventThread < 0)
+		return fEventThread;
+
+	resume_thread(fEventThread);
+
+	return B_OK;
+}
+
+
+void
+RemoteTargetHostInterface::Close()
+{
+	if (fManagementConnection != NULL)
+		fManagementConnection->Close();
+
+	if (fEventThread >= 0) {
+		wait_for_thread(fEventThread, NULL);
+		fEventThread = -1;
+	}
+
+	fManagementConnection = NULL;
+	fMessenger = NULL;
+
+	fConnected = false;
+}
+
+
+bool
+RemoteTargetHostInterface::IsLocal() const
+{
+	return false;
+}
+
+
+bool
+RemoteTargetHostInterface::Connected() const
+{
+	return fConnected;
+}
+
+
+TargetHost*
+RemoteTargetHostInterface::GetTargetHost()
+{
+	return fTargetHost;
+}
+
+
+status_t
+RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
+	DebuggerInterface*& _interface) const
+{
+	// send the request
+	ChannelMessenger::ChannelId channelId;
+	{
+		ObjectDeleter<AttachToTeamResponse> response;
+		status_t error = sendRequest(*fManagementConnection,
+			AttachToTeamRequest(teamID, threadID), response);
+		if (error != B_OK)
+			return error;
+		channelId = response->channel;
+	}
+
+	// get the architecture for the target team
+	Architecture* architecture = NULL;
+	// TODO:...
+	
+	// create the messenger for the channel
+	BReference<SingleChannelMessenger> messenger(
+			new(std::nothrow) SingleChannelMessenger(fMessenger.Get(),
+				channelId),
+			true);
+	if (messenger.Get() == NULL)
+		return B_NO_MEMORY;
+
+	// create the debug connection
+	typedef MessageRemoteClientConnection<RemoteDebugRequest,
+			RemoteDebugResponse, DebugEvent, RemoteDebugFactoryContext>
+		DebugConnection;
+	BReference<DebugConnection> connection(
+			new(std::nothrow) DebugConnection(
+				RemoteDebugFactoryContext(architecture), messenger.Get()),
+			true);
+	if (messenger.Get() == NULL)
+		return B_NO_MEMORY;
+
+	// create the debugger interface
+	// TODO:...
+
+//								RemoteDebuggerInterface(
+//									RemoteDebugClientConnection* connection);
+//	virtual	status_t			Init();
+
+
+
+// TODO:...
+	return B_NOT_SUPPORTED;
+
+//	if (teamID < 0 && threadID < 0)
+//		return B_BAD_VALUE;
+//
+//	status_t error;
+//	if (teamID < 0) {
+//		thread_info threadInfo;
+//		error = get_thread_info(threadID, &threadInfo);
+//		if (error != B_OK)
+//			return error;
+//
+//		teamID = threadInfo.team;
+//	}
+//
+//	LocalDebuggerInterface* interface
+//		= new(std::nothrow) LocalDebuggerInterface(teamID);
+//	if (interface == NULL)
+//		return B_NO_MEMORY;
+//
+//	BReference<DebuggerInterface> interfaceReference(interface, true);
+//	error = interface->Init();
+//	if (error != B_OK)
+//		return error;
+//
+//	_interface = interface;
+//	interfaceReference.Detach();
+//	return B_OK;
+}
+
+
+status_t
+RemoteTargetHostInterface::CreateTeam(int commandLineArgc,
+	const char* const* arguments, team_id& _teamID) const
+{
+// TODO:...
+	return B_NOT_SUPPORTED;
+}
+
+
+status_t
+RemoteTargetHostInterface::LoadCore(const char* coreFilePath,
+	DebuggerInterface*& _interface, thread_id& _thread) const
+{
+	return B_NOT_SUPPORTED;
+}
+
+
+status_t
+RemoteTargetHostInterface::FindTeamByThread(thread_id thread,
+	team_id& _teamID) const
+{
+// TODO:...
+	return B_NOT_SUPPORTED;
+}
+
+
+status_t
+RemoteTargetHostInterface::_EventHandlerEntry(void* data)
+{
+	return ((RemoteTargetHostInterface*)data)->_EventHandler();
+}
+
+
+status_t
+RemoteTargetHostInterface::_EventHandler()
+{
+	struct Visitor : RemoteManagementEventVisitor {
+		Visitor(RemoteTargetHostInterface* self)
+			:
+			fSelf(self)
+		{
+		}
+
+		virtual void Visit(TeamAddedEvent* event)
+		{
+			fSelf->_HandleTeamAdded(*event);
+		}
+
+		virtual void Visit(TeamRemovedEvent* event)
+		{
+			fSelf->_HandleTeamRemoved(*event);
+		}
+
+		virtual void Visit(TeamRenamedEvent* event)
+		{
+			fSelf->_HandleTeamRenamed(*event);
+		}
+
+	private:
+		RemoteTargetHostInterface* fSelf;
+	} visitor(this);
+
+	for (;;) {
+		// get next event from server
+		RemoteManagementEvent* event;
+		status_t error = fManagementConnection->GetNextEvent(event);
+		if (error != B_OK)
+			break;
+		ObjectDeleter<RemoteManagementEvent> eventDeleter(event);
+
+		event->AcceptVisitor(&visitor);
+	}
+
+	fConnected = false;
+
+	return B_OK;
+}
+
+void
+RemoteTargetHostInterface::_HandleTeamAdded(TeamAddedEvent& event)
+{
+	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
+	if (fTargetHost->TeamInfoByID(event.info.TeamID()) != NULL)
+		fTargetHost->AddTeam(event.info);
+	else
+		fTargetHost->UpdateTeam(event.info);
+}
+
+
+void
+RemoteTargetHostInterface::_HandleTeamRemoved(TeamRemovedEvent& event)
+{
+	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
+	fTargetHost->RemoveTeam(event.teamId);
+}
+
+
+void
+RemoteTargetHostInterface::_HandleTeamRenamed(TeamRenamedEvent& event)
+{
+	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
+	fTargetHost->UpdateTeam(event.info);
+}

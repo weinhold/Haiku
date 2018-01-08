@@ -51,6 +51,8 @@ GenericConnectionConfigHandler<ConfigView>::CreateView(
 // explicit template instantiation
 
 #include "NetworkConnectionConfigView.h"
+#include "PipedCommandConnectionConfigView.h"
 
 
 template class GenericConnectionConfigHandler<NetworkConnectionConfigView>;
+template class GenericConnectionConfigHandler<PipedCommandConnectionConfigView>;

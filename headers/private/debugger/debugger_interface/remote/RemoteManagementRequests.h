@@ -6,18 +6,9 @@
 
 
 #include <ObjectList.h>
-#include <String.h>
 
-#include <AutoDeleter.h>
-
-#include "CpuState.h"
-#include "ImageInfo.h"
 #include "InspectableStruct.h"
-#include "RawData.h"
-#include "Reference.h"
-#include "SymbolInfo.h"
 #include "TeamInfo.h"
-#include "ThreadInfo.h"
 
 #include "debugger_interface/remote/RemoteInspectableStructMacros.h"
 #include "debugger_interface/remote/RemoteManagementRequest.h"
@@ -25,8 +16,8 @@
 
 #define DEFINE_REQUEST_AND_RESPONSE_STRUCTS(...)	\
 	ITERATE3(DECLARE_REQUEST_AND_RESPONSE_STRUCT, DEFINE_EMPTY, __VA_ARGS__) \
-	DECLARE_VISITOR(RemoteManagementRequestVisitor, Request, __VA_ARGS__)	\
-	DECLARE_VISITOR(RemoteManagementResponseVisitor, Response, __VA_ARGS__)	\
+	DECLARE_VISITOR3(RemoteManagementRequestVisitor, Request, __VA_ARGS__)	\
+	DECLARE_VISITOR3(RemoteManagementResponseVisitor, Response, __VA_ARGS__)	\
 	ITERATE3(DEFINE_REQUEST_AND_RESPONSE_STRUCT, DEFINE_EMPTY, __VA_ARGS__)
 
 /*!	Defines a request struct.
@@ -59,13 +50,10 @@ static const uint32 kRemoteManagementProtocolVersion = 1;
 #include "debugger_interface/remote/RemoteManagementRequestDefs.h"
 
 
-// defined in RemoteInspectableStructMacros.h
-#undef DECLARE_REQUEST_AND_RESPONSE_STRUCT
-#undef DECLARE_VISITOR
-#undef DECLARE_VISIT_METHOD_Request
-#undef DECLARE_VISIT_METHOD_Response
-#undef DEFINE_REQUEST_AND_RESPONSE_STRUCT
+// undefine macros defined in RemoteInspectableStructMacros.h
+#include "debugger_interface/remote/RemoteInspectableStructMacrosUndefine.h"
 
+// undefine macros defined here
 #undef DEFINE_REQUEST_AND_RESPONSE_STRUCTS
 #undef DEFINE_REQUEST_STRUCT
 #undef DEFINE_REPLY_STRUCT

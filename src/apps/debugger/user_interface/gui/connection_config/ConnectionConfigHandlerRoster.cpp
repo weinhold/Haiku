@@ -11,6 +11,7 @@
 
 
 struct NetworkConnectionConfigView;
+struct PipedCommandConnectionConfigView;
 
 
 /*static*/ ConnectionConfigHandlerRoster*
@@ -134,6 +135,7 @@ ConnectionConfigHandlerRoster::_RegisterHandlers()
 		handlerDeleter.Detach(); \
 
 	REGISTER_HANDLER_INFO(Network, "Network")
+	REGISTER_HANDLER_INFO(PipedCommand, "Command")
 
 	return B_OK;
 }

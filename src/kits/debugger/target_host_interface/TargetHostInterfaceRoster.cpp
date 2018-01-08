@@ -11,6 +11,7 @@
 
 #include "LocalTargetHostInterfaceInfo.h"
 #include "NetworkTargetHostInterfaceInfo.h"
+#include "PipedCommandTargetHostInterfaceInfo.h"
 #include "TargetHostInterfaceInfo.h"
 
 
@@ -103,6 +104,7 @@ TargetHostInterfaceRoster::RegisterInterfaceInfos()
 		interfaceReference.Detach();
 
 	REGISTER_INTERFACE_INFO(Local)
+	REGISTER_INTERFACE_INFO(PipedCommand)
 	REGISTER_INTERFACE_INFO(Network)
 
 	return B_OK;

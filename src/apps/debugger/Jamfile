@@ -97,6 +97,7 @@ local sources =
 	# user_interface/gui/connection_config/config_handlers
 	GenericConnectionConfigHandler.cpp
 	NetworkConnectionConfigView.cpp
+	PipedCommandConnectionConfigView.cpp
 
 	# user_interface/gui/model
 	VariablesViewState.cpp
