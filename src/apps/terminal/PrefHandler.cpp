@@ -179,9 +179,8 @@ PrefHandler::SetDefault(PrefHandler *prefHandler)
 }
 
 
-/* static */
-status_t
-PrefHandler::GetDefaultPath(BPath& path)
+/*static*/ status_t
+PrefHandler::GetPath(const char* entryName, BPath& path)
 {
 	status_t status;
 	status = find_directory(B_USER_SETTINGS_DIRECTORY, &path, true);
@@ -197,7 +196,14 @@ PrefHandler::GetDefaultPath(BPath& path)
 	if (status != B_OK)
 		return status;
 
-	return path.Append("Default");
+	return path.Append(entryName);
+}
+
+
+/*static*/ status_t
+PrefHandler::GetDefaultPath(BPath& path)
+{
+	return GetPath("Default", path);
 }
 
 

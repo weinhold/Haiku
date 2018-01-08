@@ -69,6 +69,7 @@ class PrefHandler {
 
 		bool        IsEmpty() const;
 
+		static status_t GetPath(const char* entryName, BPath& path);
 		static status_t GetDefaultPath(BPath& path);
 
 	private:
