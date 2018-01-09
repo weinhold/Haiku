@@ -258,6 +258,9 @@ private:
 
 		// check the request
 		HelloRequest* helloRequest = dynamic_cast<HelloRequest*>(request);
+		if (helloRequest == NULL)
+			return B_BAD_DATA;
+
 		status_t status = B_OK;
 		if (helloRequest->protocolVersion != kRemoteManagementProtocolVersion) {
 			// protocol version mismatch
