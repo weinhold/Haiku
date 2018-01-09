@@ -527,7 +527,7 @@ struct StreamMessenger::Impl {
 	{
 		uint64 messageId = _NextMessageId();
 
-		status_t error = _SendMessage(Envelope(messageId, channelId), message,
+		status_t error = _SendMessage(Envelope(channelId, messageId), message,
 			false);
 		if (error == B_OK)
 			_messageId = messageId;
@@ -548,7 +548,7 @@ struct StreamMessenger::Impl {
 		locker.Unlock();
 
 		// send the message
-		status_t error = _SendMessage(Envelope(messageId, channelId), message,
+		status_t error = _SendMessage(Envelope(channelId, messageId), message,
 			false);
 
 		locker.Lock();

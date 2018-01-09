@@ -70,7 +70,7 @@ SingleChannelMessenger::SendReply(MessageId messageId, const BMessage& reply)
 {
 	if (fClosed)
 		return B_CANCELED;
-	return fParent->SendReply(ChannelMessenger::Envelope(messageId, fChannelId),
+	return fParent->SendReply(ChannelMessenger::Envelope(fChannelId, messageId),
 		reply);
 }
 

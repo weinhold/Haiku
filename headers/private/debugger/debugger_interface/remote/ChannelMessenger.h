@@ -56,13 +56,13 @@ public:
 
 
 struct ChannelMessenger::Envelope {
-	MessageId	messageId;
 	ChannelId	channelId;
+	MessageId	messageId;
 
-	Envelope(MessageId messageId = 0, ChannelId channelId = 0)
+	Envelope(ChannelId channelId = 0, MessageId messageId = 0)
 		:
-		messageId(messageId),
-		channelId(channelId)
+		channelId(channelId),
+		messageId(messageId)
 	{
 	}
 };
