@@ -718,7 +718,7 @@ private:
 
 		MessageHeader* header = (MessageHeader*)buffer;
 		header->size = B_HOST_TO_BENDIAN_INT64(
-			totalSize | (isReply ? kIsReplyFlag : 0));
+			flatSize | (isReply ? kIsReplyFlag : 0));
 		header->messageId = B_HOST_TO_BENDIAN_INT64(envelope.messageId);
 		header->channelId = B_HOST_TO_BENDIAN_INT64(envelope.channelId);
 
