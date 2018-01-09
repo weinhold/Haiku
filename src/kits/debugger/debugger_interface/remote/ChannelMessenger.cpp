@@ -43,11 +43,5 @@ status_t
 ChannelMessenger::ReceiveMessage(MessageId& _messageId, BMessage& _message,
 	bigtime_t timeout)
 {
-	Envelope envelope;
-	status_t error = ReceiveMessage(kDefaultChannelId, _messageId, _message,
-		timeout);
-	if (error != B_OK)
-		return error;
-	_messageId = envelope.messageId;
-	return B_OK;
+	return ReceiveMessage(kDefaultChannelId, _messageId, _message, timeout);
 }
