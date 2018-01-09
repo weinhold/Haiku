@@ -94,7 +94,7 @@ struct Archiver {
 		error = dataFactory.CreateRequest(dataName, data);
 		if (error != B_OK)
 			return error;
-		ObjectDeleter<RemoteData> dataDeleter;
+		ObjectDeleter<RemoteData> dataDeleter(data);
 
 		try {
 			typename Types<RemoteData>::UnarchivingInspector inspector(
