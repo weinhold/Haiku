@@ -13,6 +13,7 @@
 
 #include "ArchitectureFactory.h"
 #include "TargetHost.h"
+#include "Tracing.h"
 
 #include "debugger_interface/remote/MessageRemoteClientConnection.h"
 #include "debugger_interface/remote/RemoteDebugFactoryContext.h"
@@ -108,23 +109,33 @@ RemoteTargetHostInterface::Init(const BString& connectionName, Stream* stream)
 
 	// send the Hello request
 	{
+		TRACE_REMOTE("sending hello request\n");
 		HelloRequest request(kRemoteManagementProtocolVersion);
 		ObjectDeleter<HelloResponse> response;
 		error = sendRequest(*fManagementConnection, request, response);
-		if (error != B_OK)
+		if (error != B_OK) {
+			TRACE_REMOTE("server: request failed: %s\n", strerror(error));
 			return error;
+		}
 
+		TRACE_REMOTE("received hello response, protocol version: %" B_PRIu32
+			"\n", response->protocolVersion);
 		if (response->protocolVersion != kRemoteManagementProtocolVersion)
 			return B_MISMATCHED_VALUES;
 	}
 
 	// send a GetTeams request
 	{
+		TRACE_REMOTE("sending get teams request\n");
 		ObjectDeleter<GetTeamsResponse> response;
 		error = sendRequest(*fManagementConnection, GetTeamsRequest(),
 			response);
-		if (error != B_OK)
+		if (error != B_OK) {
+			TRACE_REMOTE("server: request failed: %s\n", strerror(error));
 			return error;
+		}
+
+		TRACE_REMOTE("got %" B_PRIu32 " teams\n", response->infos.CountItems());
 
 		for (int32 i = 0; TeamInfo* info = response->infos.ItemAt(i); i++)
 			fTargetHost->AddTeam(*info);

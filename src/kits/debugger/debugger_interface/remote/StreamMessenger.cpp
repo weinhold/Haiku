@@ -710,6 +710,10 @@ private:
 		ssize_t flatSize = message.FlattenedSize();
 		ssize_t totalSize = flatSize + sizeof(MessageHeader);
 
+		TRACE_REMOTE("sending %s with ID %" B_PRIu64 " in channel %" B_PRIu64
+			", payload size: %zd\n", isReply ? "reply" : "message",
+			envelope.messageId, envelope.channelId, flatSize);
+
 		char* buffer = new(std::nothrow) char[totalSize];
 		if (buffer == NULL)
 			return B_NO_MEMORY;
@@ -742,8 +746,11 @@ private:
 		header.messageId = B_BENDIAN_TO_HOST_INT64(header.messageId);
 		header.channelId = B_BENDIAN_TO_HOST_INT64(header.channelId);
 
-		if ((header.size & kSizeMask) > kMaxSaneMessageSize)
+		if ((header.size & kSizeMask) > kMaxSaneMessageSize) {
+			WARNING("StreamMessenger: received message header with insane"
+				" message size\n");
 			return B_BAD_DATA;
+		}
 		size_t size = size_t(header.size & kSizeMask);
 
 		char* buffer = new(std::nothrow) char[size];
@@ -756,8 +763,11 @@ private:
 			return error;
 
 		error = _message.Unflatten(buffer);
-		if (error != B_OK)
+		if (error != B_OK) {
+			WARNING("StreamMessenger: failed to unflatten received message:"
+				" %s\n", strerror(error));
 			return error;
+		}
 
 		_envelope.messageId = header.messageId;
 		_envelope.channelId = header.channelId;
@@ -789,6 +799,10 @@ private:
 					" failed to read message: %s\n", strerror(error));
 				break;
 			}
+
+			TRACE_REMOTE("received %s with ID %" B_PRIu64 " in channel %"
+				B_PRIu64 "\n", isReply ? "reply" : "message",
+				message->envelope.messageId, message->envelope.channelId);
 
 			PthreadMutexLocker locker(fLock);
 
@@ -828,6 +842,8 @@ private:
 		Channel* channel = fChannels.Lookup(message->envelope.channelId);
 		if (channel == NULL) {
 			// unknown channel
+			WARNING("received message for unknown channel %" B_PRIu64 "\n",
+				message->envelope.channelId);
 			delete message;
 			return;
 		}

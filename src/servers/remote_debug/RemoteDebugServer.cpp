@@ -26,6 +26,7 @@
 #include <debugger_interface/remote/SingleChannelMessenger.h>
 #include <debugger_interface/remote/StreamMessenger.h>
 #include <TargetHost.h>
+#include <Tracing.h>
 
 #include "DebuggerInterfaceServer.h"
 
@@ -247,26 +248,35 @@ private:
 	status_t _InitConnection()
 	{
 		// handle the initial hello request
+		TRACE_REMOTE("server: waiting for hello request\n");
 		RemoteManagementRequest* request = NULL;
 		ManagementConnection::RequestId requestId;
 		status_t error = fManagementConnection->ReceiveRequest(request,
 			requestId);
-		if (error != B_OK)
+		if (error != B_OK) {
+			TRACE_REMOTE("server: failed to receive request\n");
 			return error;
+		}
 
 		ObjectDeleter<RemoteManagementRequest> requestDeleter(request);
 
 		// check the request
 		HelloRequest* helloRequest = dynamic_cast<HelloRequest*>(request);
-		if (helloRequest == NULL)
+		if (helloRequest == NULL) {
+			TRACE_REMOTE("server: unexpected request: %s\n",
+				request->StructName());
 			return B_BAD_DATA;
+		}
 
 		status_t status = B_OK;
+		TRACE_REMOTE("server: received hello request, protocol version %"
+			B_PRIu32 "\n", helloRequest->protocolVersion);
 		if (helloRequest->protocolVersion != kRemoteManagementProtocolVersion) {
 			// protocol version mismatch
 			status = B_UNSUPPORTED;
 		}
 
+		TRACE_REMOTE("server: sending hello response\n");
 		HelloResponse response(status, kRemoteManagementProtocolVersion);
 		error = fManagementConnection->SendResponse(requestId, response);
 		return error == B_OK ? status : error;
@@ -340,11 +350,14 @@ private:
 	virtual void Visit(HelloRequest* request)
 	{
 		// unexpected, should only be received when the connection is initiated
+		TRACE_REMOTE("server: received unexpected hello request\n");
 		throw status_t(B_UNSUPPORTED);
 	}
 
 	virtual void Visit(GetTeamsRequest* request)
 	{
+		TRACE_REMOTE("server: received get teams request\n");
+
 		// prepare the response
 		GetTeamsResponse response;
 		response.error = B_OK;
@@ -369,11 +382,15 @@ private:
 		}
 
 		// send the response
+		TRACE_REMOTE("server: sending get teams response (ID: %" B_PRIu64 ")\n",
+			fCurrentRequestId);
 		fManagementConnection->SendResponse(fCurrentRequestId, response);
 	}
 
 	virtual void Visit(AttachToTeamRequest* request)
 	{
+		TRACE_REMOTE("server: received attach to team request\n");
+
 		// create a new channel
 		ChannelId channelId;
 		status_t requestError = fStreamMessenger->NewChannel(channelId);
@@ -396,6 +413,7 @@ private:
 		}
 
 		// send the response
+		TRACE_REMOTE("server: sending attach to team response\n");
 		AttachToTeamResponse response(requestError, channelId, architectureName,
 			cpuFeatureFlags);
 		status_t error = fManagementConnection->SendResponse(fCurrentRequestId,
