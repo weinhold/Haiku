@@ -51,7 +51,7 @@ sendRequest(RemoteManagementClientConnection& connection,
 	if (concreteResponse->error != B_OK)
 		return concreteResponse->error;
 
-	_response = concreteResponse;
+	_response.SetTo(concreteResponse);
 	responseDeleter.Detach();
 	return B_OK;
 }

@@ -32,7 +32,7 @@ public:
 	{
 	}
 
-	inline AutoDeleter(C *object)
+	inline explicit AutoDeleter(C *object)
 		: fObject(object)
 	{
 	}
@@ -80,6 +80,10 @@ public:
 protected:
 	C			*fObject;
 	DeleteFunc	fDelete;
+
+private:
+	AutoDeleter(const AutoDeleter&);
+	AutoDeleter& operator=(const AutoDeleter&);
 };
 
 
@@ -98,7 +102,9 @@ template<typename C>
 struct ObjectDeleter : AutoDeleter<C, ObjectDelete<C> >
 {
 	ObjectDeleter() : AutoDeleter<C, ObjectDelete<C> >() {}
-	ObjectDeleter(C *object) : AutoDeleter<C, ObjectDelete<C> >(object) {}
+	explicit ObjectDeleter(C *object) : AutoDeleter<C, ObjectDelete<C> >(object)
+	{
+	}
 };
 
 
@@ -117,7 +123,7 @@ template<typename C>
 struct ArrayDeleter : AutoDeleter<C, ArrayDelete<C> >
 {
 	ArrayDeleter() : AutoDeleter<C, ArrayDelete<C> >() {}
-	ArrayDeleter(C *array) : AutoDeleter<C, ArrayDelete<C> >(array) {}
+	explicit ArrayDeleter(C *array) : AutoDeleter<C, ArrayDelete<C> >(array) {}
 };
 
 
@@ -134,7 +140,8 @@ struct MemoryDelete
 struct MemoryDeleter : AutoDeleter<void, MemoryDelete >
 {
 	MemoryDeleter() : AutoDeleter<void, MemoryDelete >() {}
-	MemoryDeleter(void *memory) : AutoDeleter<void, MemoryDelete >(memory) {}
+	explicit MemoryDeleter(void *memory)
+		: AutoDeleter<void, MemoryDelete >(memory) {}
 };
 
 
@@ -166,7 +173,7 @@ struct CObjectDeleter
 	typedef AutoDeleter<Type, CObjectDelete<Type, DestructorReturnType> > Base;
 
 	template<typename Destructor>
-	CObjectDeleter(Destructor destructor) : Base()
+	explicit CObjectDeleter(Destructor destructor) : Base()
 	{
 		Base::fDelete = destructor;
 	}
@@ -208,7 +215,7 @@ struct MethodDeleter
 	typedef AutoDeleter<Type, MethodDelete<Type, DestructorReturnType> > Base;
 
 	template<typename Destructor>
-	MethodDeleter(Destructor destructor) : Base()
+	explicit MethodDeleter(Destructor destructor) : Base()
 	{
 		Base::fDelete = destructor;
 	}
@@ -230,7 +237,7 @@ struct FileDescriptorCloser {
 	{
 	}
 
-	inline FileDescriptorCloser(int descriptor)
+	inline explicit FileDescriptorCloser(int descriptor)
 		:
 		fDescriptor(descriptor)
 	{

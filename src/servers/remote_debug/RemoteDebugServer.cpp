@@ -466,7 +466,7 @@ private:
 		if (error != B_OK)
 			return error;
 
-		_server = serverDeleter.Detach();
+		_server.SetTo(serverDeleter.Detach());
 		_debuggerInterface = debuggerInterfaceReference;
 		return B_OK;
 	}
