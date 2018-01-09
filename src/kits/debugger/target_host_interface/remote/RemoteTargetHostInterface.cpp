@@ -114,7 +114,7 @@ RemoteTargetHostInterface::Init(const BString& connectionName, Stream* stream)
 		if (error != B_OK)
 			return error;
 
-		if (request.protocolVersion != kRemoteManagementProtocolVersion)
+		if (response->protocolVersion != kRemoteManagementProtocolVersion)
 			return B_MISMATCHED_VALUES;
 	}
 
