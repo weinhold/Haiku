@@ -208,6 +208,11 @@ RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 		return error;
 	ChannelMessenger::ChannelId channelId = response->channel;
 
+	// add the channel
+	error = fMessenger->AddChannel(channelId);
+	if (error != B_OK)
+		return error;
+
 	// get the architecture for the target team
 	Architecture* architecture;
 	error = ArchitectureFactory::CreateArchitecture(
