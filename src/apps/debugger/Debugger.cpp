@@ -313,9 +313,11 @@ Debugger::~Debugger()
 status_t
 Debugger::Init()
 {
-	status_t error = debugger_global_init(this);
+	status_t error = debugger_global_init();
 	if (error != B_OK)
 		return error;
+
+	TargetHostInterfaceRoster::Default()->AddListener(this);
 
 	error = DebuggerUiSettingsFactory::CreateDefault();
 	if (error != B_OK)
@@ -656,12 +658,14 @@ CliDebugger::Run(const Options& options)
 	SignalSet(SIGINT).BlockInCurrentThread();
 
 	// initialize global objects and settings manager
-	status_t error = debugger_global_init(this);
+	status_t error = debugger_global_init();
 	if (error != B_OK) {
 		fprintf(stderr, "Error: Global initialization failed: %s\n",
 			strerror(error));
 		return false;
 	}
+
+	TargetHostInterfaceRoster::Default()->AddListener(this);
 
 	error = DebuggerUiSettingsFactory::CreateDefault();
 	if (error != B_OK) {
@@ -733,12 +737,14 @@ bool
 ReportDebugger::Run(const Options& options)
 {
 	// initialize global objects and settings manager
-	status_t error = debugger_global_init(this);
+	status_t error = debugger_global_init();
 	if (error != B_OK) {
 		fprintf(stderr, "Error: Global initialization failed: %s\n",
 			strerror(error));
 		return false;
 	}
+
+	TargetHostInterfaceRoster::Default()->AddListener(this);
 
 	// create the report UI
 	ReportUserInterface* userInterface

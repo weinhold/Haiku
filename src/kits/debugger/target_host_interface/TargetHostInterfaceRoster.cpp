@@ -26,7 +26,7 @@ TargetHostInterfaceRoster::TargetHostInterfaceRoster()
 	fRunningTeamDebuggers(0),
 	fInterfaceInfos(20, false),
 	fActiveInterfaces(20, false),
-	fListener(NULL)
+	fListeners(8, false)
 {
 }
 
@@ -44,7 +44,7 @@ TargetHostInterfaceRoster::Default()
 
 
 /*static*/ status_t
-TargetHostInterfaceRoster::CreateDefault(Listener* listener)
+TargetHostInterfaceRoster::CreateDefault()
 {
 	if (sDefaultInstance != NULL)
 		return B_OK;
@@ -55,7 +55,7 @@ TargetHostInterfaceRoster::CreateDefault(Listener* listener)
 		return B_NO_MEMORY;
 	ObjectDeleter<TargetHostInterfaceRoster> rosterDeleter(roster);
 
-	status_t error = roster->Init(listener);
+	status_t error = roster->Init();
 	if (error != B_OK)
 		return error;
 
@@ -78,9 +78,8 @@ TargetHostInterfaceRoster::DeleteDefault()
 
 
 status_t
-TargetHostInterfaceRoster::Init(Listener* listener)
+TargetHostInterfaceRoster::Init()
 {
-	fListener = listener;
 	return fLock.InitCheck();
 }
 
@@ -148,6 +147,15 @@ TargetHostInterfaceRoster::CreateInterface(TargetHostInterfaceInfo* info,
 	}
 
 	interface->AddListener(this);
+
+	// notify listeners
+	ListenerList listeners(fListeners);
+
+	locker.Unlock();
+
+	for (int32 i = 0; Listener* listener = listeners.ItemAt(i); i++)
+		listener->TargetHostInterfaceAdded(interface);
+
 	_interface = interface;
 	return B_OK;
 }
@@ -167,11 +175,34 @@ TargetHostInterfaceRoster::ActiveInterfaceAt(int32 index) const
 }
 
 
+bool
+TargetHostInterfaceRoster::AddListener(Listener* listener)
+{
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
+	return fListeners.AddItem(listener);
+}
+
+
+bool
+TargetHostInterfaceRoster::RemoveListener(Listener* listener)
+{
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
+	return fListeners.RemoveItem(listener);
+}
+
+
 void
 TargetHostInterfaceRoster::TeamDebuggerStarted(TeamDebugger* debugger)
 {
 	int32 count = atomic_add(&fRunningTeamDebuggers, 1) + 1;
-	fListener->TeamDebuggerCountChanged(count);
+
+	// notify listeners
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
+	ListenerList listeners(fListeners);
+	locker.Unlock();
+
+	for (int32 i = 0; Listener* listener = listeners.ItemAt(i); i++)
+		listener->TeamDebuggerCountChanged(count);
 }
 
 
@@ -179,7 +210,14 @@ void
 TargetHostInterfaceRoster::TeamDebuggerQuit(TeamDebugger* debugger)
 {
 	int32 count = atomic_add(&fRunningTeamDebuggers, -1) - 1;
-	fListener->TeamDebuggerCountChanged(count);
+
+	// notify listeners
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
+	ListenerList listeners(fListeners);
+	locker.Unlock();
+
+	for (int32 i = 0; Listener* listener = listeners.ItemAt(i); i++)
+		listener->TeamDebuggerCountChanged(count);
 }
 
 
@@ -189,6 +227,13 @@ TargetHostInterfaceRoster::TargetHostInterfaceQuit(
 {
 	AutoLocker<TargetHostInterfaceRoster> locker(this);
 	fActiveInterfaces.RemoveItem(interface);
+
+	ListenerList listeners(fListeners);
+
+	locker.Unlock();
+
+	for (int32 i = 0; Listener* listener = listeners.ItemAt(i); i++)
+		listener->TargetHostInterfaceRemoved(interface);
 }
 
 
@@ -202,5 +247,19 @@ TargetHostInterfaceRoster::Listener::~Listener()
 
 void
 TargetHostInterfaceRoster::Listener::TeamDebuggerCountChanged(int32 count)
+{
+}
+
+
+void
+TargetHostInterfaceRoster::Listener::TargetHostInterfaceAdded(
+	TargetHostInterface* interface)
+{
+}
+
+
+void
+TargetHostInterfaceRoster::Listener::TargetHostInterfaceRemoved(
+	TargetHostInterface* interface)
 {
 }

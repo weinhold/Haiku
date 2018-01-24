@@ -26,6 +26,7 @@
 #include <debugger_interface/remote/SingleChannelMessenger.h>
 #include <debugger_interface/remote/StreamMessenger.h>
 #include <TargetHost.h>
+#include <TargetHostInterfaceRoster.h>
 #include <Tracing.h>
 
 #include "DebuggerInterfaceServer.h"
@@ -210,9 +211,11 @@ struct RemoteDebugServer : private TargetHostInterfaceRoster::Listener,
 private:
 	status_t _Init()
 	{
-		status_t error = debugger_global_init(this);
+		status_t error = debugger_global_init();
 		if (error != B_OK)
 			return error;
+
+		TargetHostInterfaceRoster::Default()->AddListener(this);
 
 		error = fLock.InitCheck();
 		if (error != B_OK)

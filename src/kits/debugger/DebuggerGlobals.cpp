@@ -8,11 +8,12 @@
 
 #include "ImageDebugLoadingStateHandlerRoster.h"
 #include "TargetHostInterface.h"
+#include "TargetHostInterfaceRoster.h"
 #include "TypeHandlerRoster.h"
 
 
 status_t
-debugger_global_init(TargetHostInterfaceRoster::Listener* listener)
+debugger_global_init()
 {
 	status_t error = TypeHandlerRoster::CreateDefault();
 	if (error != B_OK)
@@ -22,7 +23,7 @@ debugger_global_init(TargetHostInterfaceRoster::Listener* listener)
 	if (error != B_OK)
 		return error;
 
-	error = TargetHostInterfaceRoster::CreateDefault(listener);
+	error = TargetHostInterfaceRoster::CreateDefault();
 	if (error != B_OK)
 		return error;
 

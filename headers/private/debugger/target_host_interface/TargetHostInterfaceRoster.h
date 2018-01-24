@@ -24,13 +24,13 @@ public:
 	virtual						~TargetHostInterfaceRoster();
 
 	static	TargetHostInterfaceRoster* Default();
-	static	status_t			CreateDefault(Listener* listener);
+	static	status_t			CreateDefault();
 	static	void				DeleteDefault();
 
 			bool				Lock()		{ return fLock.Lock(); }
 			void				Unlock()	{ fLock.Unlock(); }
 
-			status_t			Init(Listener* listener);
+			status_t			Init();
 			status_t			RegisterInterfaceInfos();
 
 			int32				CountInterfaceInfos() const;
@@ -48,6 +48,10 @@ public:
 			int32				CountRunningTeamDebuggers() const
 									{ return fRunningTeamDebuggers; }
 
+			bool				AddListener(Listener* listener);
+			bool				RemoveListener(Listener* listener);
+
+private:
 	// TargetHostInterface::Listener
 	virtual	void				TeamDebuggerStarted(TeamDebugger* debugger);
 	virtual	void 				TeamDebuggerQuit(TeamDebugger* debugger);
@@ -57,6 +61,7 @@ public:
 private:
 			typedef BObjectList<TargetHostInterfaceInfo> InfoList;
 			typedef BObjectList<TargetHostInterface> InterfaceList;
+			typedef BObjectList<Listener> ListenerList;
 
 private:
 			BLocker				fLock;
@@ -65,7 +70,7 @@ private:
 			int32				fRunningTeamDebuggers;
 			InfoList			fInterfaceInfos;
 			InterfaceList		fActiveInterfaces;
-			Listener*			fListener;
+			ListenerList		fListeners;
 };
 
 
@@ -74,6 +79,11 @@ public:
 	virtual						~Listener();
 
 	virtual	void				TeamDebuggerCountChanged(int32 newCount);
+
+	virtual	void				TargetHostInterfaceAdded(
+									TargetHostInterface* interface);
+	virtual	void				TargetHostInterfaceRemoved(
+									TargetHostInterface* interface);
 };
 
 
