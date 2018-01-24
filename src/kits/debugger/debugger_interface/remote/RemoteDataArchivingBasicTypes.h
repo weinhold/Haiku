@@ -320,7 +320,7 @@ void unarchiveData(Context& context, const BMessage& archive, const char* name,
 		unarchiveData(context, valueArchive, registers[i].Name(),
 			registerValue);
 
-		if (cpuState->SetRegisterValue(registers + i, registerValue))
+		if (!cpuState->SetRegisterValue(registers + i, registerValue))
 			throw status_t(B_BAD_VALUE);
 	}
 
