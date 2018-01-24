@@ -39,6 +39,7 @@ struct StreamMessenger : ChannelMessenger {
 
 	// ChannelMessenger
 	virtual	status_t			NewChannel(ChannelId& _id);
+	virtual	status_t			AddChannel(ChannelId id);
 	virtual	status_t			DeleteChannel(ChannelId channelId);
 
 	virtual	status_t			SendMessage(ChannelId channelId,

@@ -34,6 +34,7 @@ public:
 
 	// ChannelMessenger
 	virtual	status_t			NewChannel(ChannelId& _id) = 0;
+	virtual	status_t			AddChannel(ChannelId id) = 0;
 	virtual	status_t			DeleteChannel(ChannelId channelId) = 0;
 
 	virtual	status_t			SendMessage(ChannelId channelId,

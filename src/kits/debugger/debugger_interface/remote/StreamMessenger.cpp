@@ -532,12 +532,25 @@ struct StreamMessenger::Impl {
 
 	status_t NewChannel(ChannelId& _id)
 	{
-		ChannelId channelId = _NextChannelId();
+		ChannelId channelId = _ReserveChannelId(0);
 		status_t error = _NewChannel(channelId);
 		if (error != B_OK)
 			return error;
 
 		_id = channelId;
+		return B_OK;
+	}
+
+	status_t AddChannel(ChannelId id)
+	{
+		if (id == 0)
+			return B_BAD_VALUE;
+
+		ChannelId channelId = _ReserveChannelId(id);
+		status_t error = _NewChannel(channelId);
+		if (error != B_OK)
+			return error;
+
 		return B_OK;
 	}
 
@@ -652,9 +665,20 @@ struct StreamMessenger::Impl {
 	}
 
 private:
-	uint64 _NextChannelId()
+	/*!	Reserve a new channel ID
+		\param id The ID to be reserved. 0 to reserve the next free ID.
+		\return The reserved ID. Does not check whether the ID is already in
+			use.
+	*/
+	uint64 _ReserveChannelId(uint64 id)
 	{
-		return (uint64)atomic_add64(&fChannelIdCounter, 1);
+		PthreadMutexLocker locker(fLock);
+
+		if (id == 0)
+			return fChannelIdCounter++;
+		if (id == fChannelIdCounter)
+			fChannelIdCounter++;
+		return id;
 	}
 
 	uint64 _NextMessageId()
@@ -674,6 +698,9 @@ private:
 			delete channel;
 			return B_NO_INIT;
 		}
+
+		if (fChannels.Lookup(channelId) != NULL)
+			return B_BAD_VALUE;
 
 		fChannels.Insert(channel);
 		return B_OK;
@@ -903,7 +930,7 @@ private:
 	ReplyWaiterHashTable fReplyWaiters;
 	ChannelHashTable	fChannels;
 	MessageQueue		fReceivedMessages;
-	int64				fChannelIdCounter;
+	uint64				fChannelIdCounter;
 	int64				fReplyIdCounter;
 };
 
@@ -998,6 +1025,16 @@ StreamMessenger::NewChannel(ChannelId& _id)
 		return B_NO_INIT;
 
 	return fImpl->NewChannel(_id);
+}
+
+
+status_t
+StreamMessenger::AddChannel(ChannelId id)
+{
+	if (fImpl == NULL)
+		return B_NO_INIT;
+
+	return fImpl->AddChannel(id);
 }
 
 
