@@ -11,6 +11,7 @@
 #include <AutoDeleter.h>
 #include <AutoLocker.h>
 
+#include "Architecture.h"
 #include "ArchitectureFactory.h"
 #include "TargetHost.h"
 #include "Tracing.h"
@@ -214,6 +215,7 @@ RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 		architecture);
 	if (error != B_OK)
 		return error;
+	BReference<Architecture> architectureReference(architecture, true);
 
 	// create the messenger for the channel
 	BReference<SingleChannelMessenger> messenger(
@@ -236,7 +238,7 @@ RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 
 	// create the debugger interface
 	RemoteDebuggerInterface* debuggerInterface
-		= new(std::nothrow) RemoteDebuggerInterface(connection);
+		= new(std::nothrow) RemoteDebuggerInterface(connection, architecture);
 	if (debuggerInterface == NULL)
 		return B_NO_MEMORY;
 	BReference<RemoteDebuggerInterface> debuggerInterfaceReference(

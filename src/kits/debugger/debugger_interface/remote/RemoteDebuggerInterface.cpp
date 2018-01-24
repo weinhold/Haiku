@@ -62,31 +62,23 @@ sendRequestStatusOnlyResponse(RemoteDebugClientConnection& connection,
 
 
 RemoteDebuggerInterface::RemoteDebuggerInterface(
-		RemoteDebugClientConnection* connection)
+		RemoteDebugClientConnection* connection, Architecture* architecture)
 	:
 	fConnection(connection),
-	fArchitecture(NULL)
+	fArchitecture(architecture)
 {
-	fConnection->AcquireReference();
 }
 
 
 RemoteDebuggerInterface::~RemoteDebuggerInterface()
 {
-	if (fArchitecture != NULL)
-		fArchitecture->ReleaseReference();
-
-	if (fConnection != NULL)
-		fConnection->ReleaseReference();
 }
 
 
 status_t
 RemoteDebuggerInterface::Init()
 {
-	// create the Architecture object
-	// TODO: implement
-	return B_UNSUPPORTED;
+	return B_OK;
 }
 
 
@@ -123,7 +115,7 @@ RemoteDebuggerInterface::TeamID() const
 Architecture*
 RemoteDebuggerInterface::GetArchitecture() const
 {
-	return fArchitecture;
+	return fArchitecture.Get();
 }
 
 
