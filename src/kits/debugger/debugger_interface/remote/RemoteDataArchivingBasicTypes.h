@@ -365,7 +365,7 @@ void unarchiveData(Context& context, const BMessage& archive, const char* name,
 	for (int32 i = 0; i < count; i++) {
 		Value* value = new Value;
 		ObjectDeleter<Value> valueDeleter;
-		unarchiveData(context, archive, name, index, *value);
+		unarchiveData(context, archive, name, i, *value);
 
 		if (!list.AddItem(value))
 			throw B_NO_MEMORY;
