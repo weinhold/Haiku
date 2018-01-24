@@ -85,6 +85,8 @@ PipedCommandConnectionConfigView::InitSpecific()
 				new BMessage(MSG_PIPED_COMMAND_CONFIG_INPUT_CHANGED))))
 	.End();
 
+	fCommandInput->SetExplicitMinSize(BSize(300, B_SIZE_UNSET));
+
 	fCommandInput->SetModificationMessage(
 		new BMessage(MSG_PIPED_COMMAND_CONFIG_INPUT_CHANGED));
 
