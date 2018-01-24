@@ -170,16 +170,16 @@ TargetHostInterfaceRoster::ActiveInterfaceAt(int32 index) const
 void
 TargetHostInterfaceRoster::TeamDebuggerStarted(TeamDebugger* debugger)
 {
-	fRunningTeamDebuggers++;
-	fListener->TeamDebuggerCountChanged(fRunningTeamDebuggers);
+	int32 count = atomic_add(&fRunningTeamDebuggers, 1) + 1;
+	fListener->TeamDebuggerCountChanged(count);
 }
 
 
 void
 TargetHostInterfaceRoster::TeamDebuggerQuit(TeamDebugger* debugger)
 {
-	fRunningTeamDebuggers--;
-	fListener->TeamDebuggerCountChanged(fRunningTeamDebuggers);
+	int32 count = atomic_add(&fRunningTeamDebuggers, -1) - 1;
+	fListener->TeamDebuggerCountChanged(count);
 }
 
 
