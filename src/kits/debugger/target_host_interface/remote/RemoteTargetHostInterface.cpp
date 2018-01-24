@@ -239,14 +239,14 @@ RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 		= new(std::nothrow) RemoteDebuggerInterface(connection);
 	if (debuggerInterface == NULL)
 		return B_NO_MEMORY;
+	BReference<RemoteDebuggerInterface> debuggerInterfaceReference(
+		debuggerInterface, true);
 
 	error = debuggerInterface->Init();
-	if (error != B_OK) {
-		delete debuggerInterface;
+	if (error != B_OK)
 		return error;
-	}
 
-	_interface = debuggerInterface;
+	_interface = debuggerInterfaceReference.Detach();
 	return B_OK;
 }
 
