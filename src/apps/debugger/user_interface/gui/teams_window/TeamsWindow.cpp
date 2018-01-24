@@ -14,6 +14,7 @@
 
 #include <Application.h>
 #include <Button.h>
+#include <Debug.h>
 #include <File.h>
 #include <FilePanel.h>
 #include <FindDirectory.h>
@@ -38,7 +39,8 @@
 enum {
 	MSG_TEAM_SELECTION_CHANGED = 'tesc',
 	MSG_CHOSE_CORE_FILE = 'chcf',
-	MSG_SWITCH_TARGET_CONNECTION = 'stco'
+	MSG_SWITCH_TARGET_CONNECTION = 'stco',
+	MSG_TARGET_HOST_INTERFACES_CHANGED = 'thic',
 };
 
 
@@ -59,11 +61,14 @@ TeamsWindow::TeamsWindow(SettingsManager* settingsManager)
 	team_info info;
 	get_team_info(B_CURRENT_TEAM, &info);
 	fCurrentTeam = info.team;
+
+	TargetHostInterfaceRoster::Default()->AddListener(this);
 }
 
 
 TeamsWindow::~TeamsWindow()
 {
+	TargetHostInterfaceRoster::Default()->RemoveListener(this);
 }
 
 
@@ -175,11 +180,9 @@ TeamsWindow::MessageReceived(BMessage* message)
 
 		case MSG_SWITCH_TARGET_CONNECTION:
 		{
-			TargetHostInterface* interface;
-			if (message->FindPointer("interface", reinterpret_cast<void**>(
-					&interface)) != B_OK) {
-				break;
-			}
+			TargetHostInterface* interface = _InterfaceForId(*message);
+			if (interface == NULL)
+				interface = _LocalInterface();
 
 			if (interface == fTargetHostInterface)
 				break;
@@ -189,6 +192,13 @@ TeamsWindow::MessageReceived(BMessage* message)
 			fLoadCoreButton->SetEnabled(fTargetHostInterface->IsLocal());
 			break;
 		}
+
+		case MSG_TARGET_HOST_INTERFACES_CHANGED:
+			try {
+				_InterfacesChanged();
+			} catch (std::bad_alloc&) {
+			}
+			break;
 
 		default:
 			BWindow::MessageReceived(message);
@@ -223,6 +233,25 @@ TeamsWindow::RemoveListener(Listener* listener)
 }
 
 
+// #pragma mark -- TargetHostInterfaceRoster::Listener
+
+
+void
+TeamsWindow::TargetHostInterfaceAdded(TargetHostInterface* interface)
+{
+	BMessage message(MSG_TARGET_HOST_INTERFACES_CHANGED);
+	PostMessage(&message);
+}
+
+
+void
+TeamsWindow::TargetHostInterfaceRemoved(TargetHostInterface* interface)
+{
+	BMessage message(MSG_TARGET_HOST_INTERFACES_CHANGED);
+	PostMessage(&message);
+}
+
+
 // #pragma mark --
 
 
@@ -241,24 +270,6 @@ TeamsWindow::_Init()
 	BMenu* connectionMenu = new BMenu("Connection");
 	ObjectDeleter<BMenu> menuDeleter(connectionMenu);
 	connectionMenu->SetLabelFromMarked(true);
-
-	TargetHostInterfaceRoster* roster = TargetHostInterfaceRoster::Default();
-	for (int32 i = 0; i < roster->CountActiveInterfaces(); i++) {
-		TargetHostInterface* interface = roster->ActiveInterfaceAt(i);
-		BMenuItem* item = new BMenuItem(interface->GetTargetHost()->Name(),
-			new BMessage(MSG_SWITCH_TARGET_CONNECTION));
-		if (item->Message()->AddPointer("interface", interface) != B_OK) {
-			delete item;
-			throw std::bad_alloc();
-		}
-
-		if (interface->IsLocal()) {
-			item->SetMarked(true);
-			fTargetHostInterface = interface;
-		}
-
-		connectionMenu->AddItem(item);
-	}
 
 	BGroupLayout* connectionLayout = NULL;
 
@@ -288,6 +299,8 @@ TeamsWindow::_Init()
 		.End();
 
 	menuDeleter.Detach();
+
+	_InterfacesChanged();
 
 	AddListener(fTeamsListView);
 
@@ -350,6 +363,76 @@ TeamsWindow::_SaveSettings()
 		status = settings.Flatten(&file);
 
 	return status;
+}
+
+
+/*static*/ TargetHostInterface*
+TeamsWindow::_InterfaceForId(const BMessage& message)
+{
+	int32 interfaceId;
+	if (message.FindInt32("interfaceId", &interfaceId) != B_OK)
+		return NULL;
+
+	return TargetHostInterfaceRoster::Default()->ActiveInterfaceForId(
+		interfaceId);
+}
+
+
+/*static*/ TargetHostInterface*
+TeamsWindow::_LocalInterface()
+{
+	TargetHostInterfaceRoster* roster = TargetHostInterfaceRoster::Default();
+	AutoLocker<TargetHostInterfaceRoster> rosterLocker(roster);
+
+	for (int32 i = 0; i < roster->CountActiveInterfaces(); i++) {
+		TargetHostInterface* interface = roster->ActiveInterfaceAt(i);
+		if (interface->IsLocal())
+			return interface;
+	}
+
+	debugger("no local target host interface");
+	return NULL;
+}
+
+
+void
+TeamsWindow::_InterfacesChanged()
+{
+	// clear the connection menu
+	BMenu* menu = fConnectionField->Menu();
+	menu->RemoveItems(0, menu->CountItems(), true);
+
+	// ... and repopulate it
+	TargetHostInterfaceRoster* roster = TargetHostInterfaceRoster::Default();
+	AutoLocker<TargetHostInterfaceRoster> rosterLocker(roster);
+
+	BMenuItem* itemToSelect = NULL;
+	TargetHostInterface* interfaceToSelect = NULL;
+
+	for (int32 i = 0; i < roster->CountActiveInterfaces(); i++) {
+		TargetHostInterface* interface = roster->ActiveInterfaceAt(i);
+		BMenuItem* item = new BMenuItem(interface->GetTargetHost()->Name(),
+			new BMessage(MSG_SWITCH_TARGET_CONNECTION));
+		if (item->Message()->AddInt32("interfaceId", interface->Id()) != B_OK) {
+			delete item;
+			throw std::bad_alloc();
+		}
+
+		if (interface == fTargetHostInterface
+				|| (interfaceToSelect == NULL && interface->IsLocal())) {
+			itemToSelect = item;
+			interfaceToSelect = interface;
+		}
+
+		menu->AddItem(item);
+	}
+
+	rosterLocker.Unlock();
+
+	ASSERT(interfaceToSelect != NULL);
+
+	fTargetHostInterface = interfaceToSelect;
+	itemToSelect->SetMarked(true);
 }
 
 

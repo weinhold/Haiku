@@ -9,6 +9,7 @@
 
 #include <Window.h>
 
+#include <TargetHostInterfaceRoster.h>
 #include <util/DoublyLinkedList.h>
 
 
@@ -23,7 +24,8 @@ class TargetHostInterface;
 class TeamsListView;
 
 
-class TeamsWindow : public BWindow {
+class TeamsWindow : public BWindow,
+	private TargetHostInterfaceRoster::Listener {
 public:
 	class Listener;
 
@@ -41,6 +43,13 @@ public:
 			void				RemoveListener(Listener* listener);
 
 private:
+	// TargetHostInterfaceRoster::Listener
+	virtual	void				TargetHostInterfaceAdded(
+									TargetHostInterface* interface);
+	virtual	void				TargetHostInterfaceRemoved(
+									TargetHostInterface* interface);
+
+private:
 			typedef DoublyLinkedList<Listener> ListenerList;
 
 private:
@@ -48,6 +57,11 @@ private:
 			status_t			_OpenSettings(BFile& file, uint32 mode);
 			status_t			_LoadSettings(BMessage& settings);
 			status_t			_SaveSettings();
+
+	static	TargetHostInterface* _InterfaceForId(const BMessage& message);
+	static	TargetHostInterface* _LocalInterface();
+
+			void				_InterfacesChanged();
 
 			void				_NotifySelectedInterfaceChanged(
 									TargetHostInterface* interface);
