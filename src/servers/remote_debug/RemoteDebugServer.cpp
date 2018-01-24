@@ -399,6 +399,7 @@ private:
 		status_t requestError = fStreamMessenger->NewChannel(channelId);
 		BString architectureName;
 		uint32 cpuFeatureFlags = 0;
+		team_id teamId = -1;
 
 		// start the debugger interface server
 		ObjectDeleter<DebuggerInterfaceServer> serverDeleter;
@@ -411,14 +412,15 @@ private:
 					= debuggerInterface->GetArchitecture();
 				architectureName = architecture->Name();
 				cpuFeatureFlags = architecture->CpuFeatures();
+				teamId = debuggerInterface->TeamID();
 			} else
 				fStreamMessenger->DeleteChannel(channelId);
 		}
 
 		// send the response
 		TRACE_REMOTE("server: sending attach to team response\n");
-		AttachToTeamResponse response(requestError, channelId, architectureName,
-			cpuFeatureFlags);
+		AttachToTeamResponse response(requestError, teamId, channelId,
+			architectureName, cpuFeatureFlags);
 		status_t error = fManagementConnection->SendResponse(fCurrentRequestId,
 			response);
 		if (error != B_OK)

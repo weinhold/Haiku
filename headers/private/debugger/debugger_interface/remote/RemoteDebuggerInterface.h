@@ -19,7 +19,7 @@ typedef RemoteClientConnection<RemoteDebugRequest, RemoteDebugResponse,
 
 class RemoteDebuggerInterface : public DebuggerInterface {
 public:
-								RemoteDebuggerInterface(
+								RemoteDebuggerInterface(team_id teamId,
 									RemoteDebugClientConnection* connection,
 									Architecture* architecture);
 	virtual						~RemoteDebuggerInterface();
@@ -82,6 +82,7 @@ public:
 									const void* buffer, size_t size);
 
 private:
+			team_id				fTeamId;
 			BReference<RemoteDebugClientConnection> fConnection;
 			BReference<Architecture> fArchitecture;
 };

@@ -141,8 +141,9 @@ struct DebuggerInterfaceServer::RequestHandler : RemoteDebugRequestVisitor {
 		CpuState* cpuState = NULL;
 		status_t error = fServer->fDebuggerInterface->GetCpuState(
 			request->threadId, cpuState);
+		BReference<CpuState> cpuStateReference(cpuState, true);
 		_SendResponse(request,
-			GetCpuStateResponse(error, Reference<CpuState>(cpuState, true)));
+			GetCpuStateResponse(error, Reference<CpuState>(cpuState, false)));
 	}
 
 	virtual void Visit(SetCpuStateRequest* request)

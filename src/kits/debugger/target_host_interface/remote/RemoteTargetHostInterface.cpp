@@ -243,7 +243,8 @@ RemoteTargetHostInterface::Attach(team_id teamID, thread_id threadID,
 
 	// create the debugger interface
 	RemoteDebuggerInterface* debuggerInterface
-		= new(std::nothrow) RemoteDebuggerInterface(connection, architecture);
+		= new(std::nothrow) RemoteDebuggerInterface(response->teamId,
+			connection, architecture);
 	if (debuggerInterface == NULL)
 		return B_NO_MEMORY;
 	BReference<RemoteDebuggerInterface> debuggerInterfaceReference(

@@ -33,6 +33,7 @@ DEFINE_REQUEST_AND_RESPONSE_STRUCTS(
 	),
 	(
 		status_t, 	error,
+		int32,		teamId,
 		uint64,		channel,
 		BString,	architecture,
 		uint32,		cpuFeatureFlags

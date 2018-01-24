@@ -61,9 +61,10 @@ sendRequestStatusOnlyResponse(RemoteDebugClientConnection& connection,
 } // anonymous namespace
 
 
-RemoteDebuggerInterface::RemoteDebuggerInterface(
+RemoteDebuggerInterface::RemoteDebuggerInterface(team_id teamId,
 		RemoteDebugClientConnection* connection, Architecture* architecture)
 	:
+	fTeamId(teamId),
 	fConnection(connection),
 	fArchitecture(architecture)
 {
@@ -107,8 +108,7 @@ RemoteDebuggerInterface::IsPostMortem() const
 team_id
 RemoteDebuggerInterface::TeamID() const
 {
-	// TODO: implement
-	return B_UNSUPPORTED;
+	return fTeamId;
 }
 
 
