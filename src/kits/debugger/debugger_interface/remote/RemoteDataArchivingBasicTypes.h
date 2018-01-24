@@ -278,14 +278,17 @@ void archiveData(Context& context, BMessage& archive, const char* name,
 {
 	BMessage valueArchive;
 
-	const Architecture* architecture = context.GetArchitecture();
-	const Register* registers = architecture->Registers();
-	int32 registerCount = architecture->CountRegisters();
-	for (int32 i = 0; i < registerCount; i++) {
-		BVariant registerValue;
-		if (!value->GetRegisterValue(registers + i, registerValue))
-			throw status_t(B_BAD_DATA);
-		archiveData(context, valueArchive, registers[i].Name(), registerValue);
+	if (value.Get() != NULL) {
+		const Architecture* architecture = context.GetArchitecture();
+		const Register* registers = architecture->Registers();
+		int32 registerCount = architecture->CountRegisters();
+		for (int32 i = 0; i < registerCount; i++) {
+			BVariant registerValue;
+			if (!value->GetRegisterValue(registers + i, registerValue))
+				throw status_t(B_BAD_DATA);
+			archiveData(context, valueArchive, registers[i].Name(),
+				registerValue);
+		}
 	}
 
 	archiveData(context, archive, name, valueArchive);
@@ -298,6 +301,10 @@ void unarchiveData(Context& context, const BMessage& archive, const char* name,
 {
 	BMessage valueArchive;
 	unarchiveData(context, archive, name, valueArchive);
+	if (valueArchive.IsEmpty()) {
+		value.Unset();
+		return;
+	}
 
 	const Architecture* architecture = context.GetArchitecture();
 	CpuState* cpuState;
