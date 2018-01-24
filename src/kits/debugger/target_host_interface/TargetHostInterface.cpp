@@ -14,6 +14,20 @@
 #include "TeamDebugger.h"
 
 
+namespace {
+
+
+int32
+nextId()
+{
+	static int32 sNextId = 0;
+	return atomic_add(&sNextId, 1);
+}
+
+
+} // anonymous namespace
+
+
 // #pragma mark - TeamDebuggerOptions
 
 
@@ -37,6 +51,7 @@ TeamDebuggerOptions::TeamDebuggerOptions()
 TargetHostInterface::TargetHostInterface()
 	:
 	BLooper(),
+	fId(nextId()),
 	fListeners(),
 	fTeamDebuggers(20, false)
 {

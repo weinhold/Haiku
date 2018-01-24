@@ -162,16 +162,33 @@ TargetHostInterfaceRoster::CreateInterface(TargetHostInterfaceInfo* info,
 
 
 int32
-TargetHostInterfaceRoster::CountActiveInterfaces() const
+TargetHostInterfaceRoster::CountActiveInterfaces()
 {
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
 	return fActiveInterfaces.CountItems();
 }
 
 
 TargetHostInterface*
-TargetHostInterfaceRoster::ActiveInterfaceAt(int32 index) const
+TargetHostInterfaceRoster::ActiveInterfaceAt(int32 index)
 {
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
 	return fActiveInterfaces.ItemAt(index);
+}
+
+
+TargetHostInterface*
+TargetHostInterfaceRoster::ActiveInterfaceForId(int32 id)
+{
+	AutoLocker<TargetHostInterfaceRoster> locker(this);
+
+	for (int32 i = 0; i < fActiveInterfaces.CountItems(); i++) {
+		TargetHostInterface* interface = fActiveInterfaces.ItemAt(i);
+		if (interface->Id() == id)
+			return interface;
+	}
+
+	return NULL;
 }
 
 

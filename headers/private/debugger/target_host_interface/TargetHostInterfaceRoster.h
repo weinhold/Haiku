@@ -42,8 +42,9 @@ public:
 									const BString& connectionName,
 									TargetHostInterface*& _interface);
 
-			int32				CountActiveInterfaces() const;
-			TargetHostInterface* ActiveInterfaceAt(int32 index) const;
+			int32				CountActiveInterfaces();
+			TargetHostInterface* ActiveInterfaceAt(int32 index);
+			TargetHostInterface* ActiveInterfaceForId(int32 id);
 
 			int32				CountRunningTeamDebuggers() const
 									{ return fRunningTeamDebuggers; }

@@ -25,8 +25,12 @@ class UserInterface;
 class TargetHostInterface : public BLooper, private TeamDebugger::Listener {
 public:
 	class Listener;
+
 								TargetHostInterface();
 	virtual						~TargetHostInterface();
+
+			int32				Id() const	{ return fId; }
+
 
 			status_t			StartTeamDebugger(const TeamDebuggerOptions& options);
 
@@ -87,6 +91,7 @@ private:
 			typedef BObjectList<TeamDebugger> TeamDebuggerList;
 
 private:
+			const int32			fId;
 			ListenerList		fListeners;
 			TeamDebuggerList	fTeamDebuggers;
 };
