@@ -6,6 +6,12 @@
 #define UTIL_REFERENCE_H
 
 
+#include <Referenceable.h>
+
+
+/*!	Object pointer wrapper that can optionally own the referenced object,
+	respectively -- if the object is a BReferenceable -- a reference to it.
+*/
 template<typename Value>
 struct Reference {
 								Reference();
@@ -26,6 +32,13 @@ struct Reference {
 
 			const Value&		operator*() const	{ return *fValue; }
 			const Value*		operator->() const	{ return fValue; }
+
+private:
+			// helper functions for releasing our fValue reference
+			void				_ReleaseValueReference(void*)
+									{ delete fValue; }
+			void				_ReleaseValueReference(BReferenceable*)
+									{ fValue->ReleaseReference(); }
 
 private:
 			Value*				fValue;
@@ -114,7 +127,7 @@ inline void
 Reference<Value>::Unset()
 {
 	if (fOwnsValue)
-		delete fValue;
+		_ReleaseValueReference(fValue);
 
 	fValue = NULL;
 	fOwnsValue = false;
