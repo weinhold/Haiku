@@ -287,8 +287,6 @@ TeamsWindow::_Init()
 			.End()
 		.End();
 
-//	connectionLayout->SetVisible(false);
-
 	menuDeleter.Detach();
 
 	AddListener(fTeamsListView);
