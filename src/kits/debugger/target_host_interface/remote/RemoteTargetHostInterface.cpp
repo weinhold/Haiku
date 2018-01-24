@@ -321,6 +321,8 @@ RemoteTargetHostInterface::_EventHandler()
 			break;
 		ObjectDeleter<RemoteManagementEvent> eventDeleter(event);
 
+		TRACE_REMOTE("received event: %s\n", event->StructName());
+
 		event->AcceptVisitor(&visitor);
 	}
 
@@ -332,6 +334,9 @@ RemoteTargetHostInterface::_EventHandler()
 void
 RemoteTargetHostInterface::_HandleTeamAdded(TeamAddedEvent& event)
 {
+	TRACE_REMOTE("remote: team added: %" B_PRId32 ": %s\n", event.info.TeamID(),
+		event.info.Arguments().String());
+
 	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
 	if (fTargetHost->TeamInfoByID(event.info.TeamID()) != NULL)
 		fTargetHost->UpdateTeam(event.info);
@@ -343,6 +348,8 @@ RemoteTargetHostInterface::_HandleTeamAdded(TeamAddedEvent& event)
 void
 RemoteTargetHostInterface::_HandleTeamRemoved(TeamRemovedEvent& event)
 {
+	TRACE_REMOTE("remote: team removed: %" B_PRId32 "\n", event.teamId);
+
 	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
 	fTargetHost->RemoveTeam(event.teamId);
 }
@@ -351,6 +358,9 @@ RemoteTargetHostInterface::_HandleTeamRemoved(TeamRemovedEvent& event)
 void
 RemoteTargetHostInterface::_HandleTeamRenamed(TeamRenamedEvent& event)
 {
+	TRACE_REMOTE("remote: team renamed: %" B_PRId32 ": %s\n",
+		event.info.TeamID(), event.info.Arguments().String());
+
 	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
 	fTargetHost->UpdateTeam(event.info);
 }
