@@ -334,9 +334,9 @@ RemoteTargetHostInterface::_HandleTeamAdded(TeamAddedEvent& event)
 {
 	AutoLocker<TargetHost> targetHostLocker(fTargetHost);
 	if (fTargetHost->TeamInfoByID(event.info.TeamID()) != NULL)
-		fTargetHost->AddTeam(event.info);
-	else
 		fTargetHost->UpdateTeam(event.info);
+	else
+		fTargetHost->AddTeam(event.info);
 }
 
 
