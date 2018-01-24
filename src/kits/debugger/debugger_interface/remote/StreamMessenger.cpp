@@ -51,9 +51,22 @@ struct Message : DoublyLinkedListLinkImpl<Message> {
 	Envelope						envelope;
 	BMessage						message;
 
+	bool							queuedGlobally;
+	bool							queuedInChannel;
+
 	// conceptually private
 	DoublyLinkedListLink<Message>	channelLink;
 	Message*						hashTableLink;
+
+public:
+	Message()
+		:
+		envelope(),
+		message(),
+		queuedGlobally(false),
+		queuedInChannel(false)
+	{
+	}
 };
 
 
@@ -281,7 +294,7 @@ struct ReplyWaiterHashTableDefinition {
 typedef BOpenHashTable<ReplyWaiterHashTableDefinition> ReplyWaiterHashTable;
 
 
-template<typename GetLink>
+template<typename GetLink, bool Message::*QueuedFlag>
 struct BlockingMessageQueue {
 	BlockingMessageQueue()
 		:
@@ -313,12 +326,18 @@ struct BlockingMessageQueue {
 		}
 
 		fMessages.Add(message);
+		message->*QueuedFlag = true;
 		return true;
 	}
 
 	Message* PopMessage()
 	{
-		return fMessages.RemoveHead();
+		if (Message* message = fMessages.RemoveHead()) {
+			message->*QueuedFlag = false;
+			return message;
+		}
+
+		return NULL;
 	}
 
 	status_t PopMessage(pthread_mutex_t& mutex, bigtime_t timeout,
@@ -329,6 +348,7 @@ struct BlockingMessageQueue {
 
 		if (Message* message = fMessages.RemoveHead()) {
 			assert(message != NULL);
+			message->*QueuedFlag = false;
 			_message = message;
 			return B_OK;
 		}
@@ -347,7 +367,10 @@ struct BlockingMessageQueue {
 
 	void RemoveMessage(Message* message)
 	{
-		fMessages.Remove(message);
+		if (message->*QueuedFlag) {
+			fMessages.Remove(message);
+			message->*QueuedFlag = false;
+		}
 	}
 
 private:
@@ -360,11 +383,11 @@ private:
 };
 
 
-typedef BlockingMessageQueue<DoublyLinkedListStandardGetLink<Message> >
-	MessageQueue;
+typedef BlockingMessageQueue<DoublyLinkedListStandardGetLink<Message>, 
+		&Message::queuedGlobally> MessageQueue;
 typedef BlockingMessageQueue<
 	DoublyLinkedListMemberGetLink<Message,
-		&Message::channelLink> > ChannelMessageQueue;
+		&Message::channelLink>, &Message::queuedInChannel > ChannelMessageQueue;
 
 
 struct Channel : BReferenceable, ChannelMessageQueue {
