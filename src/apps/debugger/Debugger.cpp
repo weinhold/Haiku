@@ -358,7 +358,15 @@ Debugger::MessageReceived(BMessage* message)
 		}
 		case MSG_TEAMS_WINDOW_CLOSED:
 		{
-			fTeamsWindow = NULL;
+			// Make sure the teams windows is really gone. This prevents a race
+			// condition, since there is a time window between sending the
+			// message and actually quitting.
+			if (fTeamsWindow != NULL) {
+				if (fTeamsWindow->Lock())
+					fTeamsWindow->Quit();
+				fTeamsWindow = NULL;
+			}
+
 			Quit();
 			break;
 		}
