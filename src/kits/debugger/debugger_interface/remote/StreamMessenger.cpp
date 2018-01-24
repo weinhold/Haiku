@@ -30,6 +30,16 @@
 namespace {
 
 
+const char*
+getMessageType(const BMessage& message)
+{
+	// used only when tracing is enabled -- suppress warning
+	(void)getMessageType;
+
+	return message.GetString("data type name", "unknown");
+}
+
+
 static const uint64 kIsReplyFlag		= 0x8000000000000000;
 static const uint64 kSizeMask			= 0x7fffffffffffffff;
 static const uint64 kMaxSaneMessageSize	= 10 * 1024 * 1024;
@@ -733,9 +743,10 @@ private:
 		ssize_t flatSize = message.FlattenedSize();
 		ssize_t totalSize = flatSize + sizeof(MessageHeader);
 
-		TRACE_REMOTE("sending %s with ID %" B_PRIu64 " in channel %" B_PRIu64
-			", payload size: %zd\n", isReply ? "reply" : "message",
-			envelope.messageId, envelope.channelId, flatSize);
+		TRACE_REMOTE("sending %s (%s) with ID %" B_PRIu64 " in channel %"
+			B_PRIu64 ", payload size: %zd\n", isReply ? "reply" : "message",
+			getMessageType(message), envelope.messageId, envelope.channelId,
+			flatSize);
 
 		char* buffer = new(std::nothrow) char[totalSize];
 		if (buffer == NULL)
@@ -823,9 +834,10 @@ private:
 				break;
 			}
 
-			TRACE_REMOTE("received %s with ID %" B_PRIu64 " in channel %"
+			TRACE_REMOTE("received %s (%s) with ID %" B_PRIu64 " in channel %"
 				B_PRIu64 "\n", isReply ? "reply" : "message",
-				message->envelope.messageId, message->envelope.channelId);
+				getMessageType(message->message), message->envelope.messageId,
+				message->envelope.channelId);
 
 			PthreadMutexLocker locker(fLock);
 
