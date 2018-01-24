@@ -315,7 +315,8 @@ status_t
 RemoteDebuggerInterface::GetCpuState(thread_id thread, CpuState*& _state)
 {
 	ObjectDeleter<GetCpuStateResponse> response;
-	status_t error = sendRequest(*fConnection, GetCpuStateRequest(), response);
+	status_t error = sendRequest(*fConnection, GetCpuStateRequest(thread),
+		response);
 	if (error != B_OK)
 		return error;
 
