@@ -11,6 +11,7 @@
 #include "debugger_interface/DebuggerInterface.h"
 #include "debugger_interface/remote/RemoteDebugRequests.h"
 #include "debugger_interface/remote/RemoteServerConnection.h"
+#include "Tracing.h"
 
 
 typedef RemoteDebugServerConnection::RequestId RequestId;
@@ -186,6 +187,10 @@ struct DebuggerInterfaceServer::RequestHandler : RemoteDebugRequestVisitor {
 			if (bytesRead < 0)
 				error = status_t(bytesRead);
 		}
+
+		TRACE_REMOTE("read memory request: @(%#" B_PRIx64 ", %zu) -> "
+			"%zd (%s)\n", request->address, size, bytesRead, strerror(error));
+
 		if (error == B_OK)
 			data.SetTo(buffer, bytesRead, RawData::Reference);
 		_SendResponse(request, ReadMemoryResponse(error, data));
@@ -301,8 +306,11 @@ DebuggerInterfaceServer::_RequestHandlerLoop()
 		RemoteDebugRequest* request = NULL;
 		RequestId requestId;
 		status_t error = fConnection->ReceiveRequest(request, requestId);
-		if (error != B_OK)
+		if (error != B_OK) {
+			ERROR("request handler: fatal: failed to receive request: %s\n",
+				strerror(error));
 			return error;
+		}
 
 		ObjectDeleter<RemoteDebugRequest> requestDeleter(request);
 
@@ -314,6 +322,8 @@ DebuggerInterfaceServer::_RequestHandlerLoop()
 			RequestHandler handler(this, requestId);
 			request->AcceptVisitor(&handler);
 		} catch (status_t error) {
+			ERROR("request handler: fatal: failed to handle request: %s\n",
+				strerror(error));
 			return error;
 		}
 	}
@@ -341,6 +351,8 @@ DebuggerInterfaceServer::_DebugEventHandler()
 		if (error != B_OK) {
 			if (error == B_INTERRUPTED)
 				continue;
+			ERROR("event handler: fatal: failed to get event: %s\n",
+				strerror(error));
 			break;
 		}
 
@@ -351,8 +363,11 @@ DebuggerInterfaceServer::_DebugEventHandler()
 
 		// handle the event (send it to the debugger)
 		error = fConnection->SendEvent(*event);
-		if (error != B_OK)
+		if (error != B_OK) {
+			ERROR("event handler: fatal: failed to send event: %s\n",
+				strerror(error));
 			break;
+		}
 	}
 
 	fTerminating = true;
